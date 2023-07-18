@@ -33,4 +33,8 @@ assert 0 "0*2"
 assert 2 "39/13-1*1"
 assert 3 "(1+5)/2"
 assert 10 "(2+3) * (3-1)"
+assert 1 "1==1"
+assert 0 "0==1"
+assert 1 " 20 == (5+15)"
+assert 7 "((1 + 20)==(3*7))*7"
 echo OK
