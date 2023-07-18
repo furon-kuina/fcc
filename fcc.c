@@ -162,12 +162,8 @@ char *node_dbg(Node *node) {
       return "/";
     case ND_LT:
       return "<";
-    case ND_GT:
-      return ">";
     case ND_LE:
       return "<=";
-    case ND_GE:
-      return ">=";
     case ND_EQ:
       return "==";
     case ND_NEQ:
