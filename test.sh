@@ -58,4 +58,6 @@ assert 5 "-1*-5"
 assert 2 "-10/-5"
 assert 1 "0>-1"
 assert 0 "0<-1"
+assert 10 "20-10"
+assert 1 "-1==-1"
 echo OK
