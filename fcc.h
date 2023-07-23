@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// tokenize
+
 typedef enum {
   TK_RESERVED,  // 記号
   TK_NUM,       // 整数トークン
@@ -22,10 +24,11 @@ struct Token {
   int len;         // トークン長
 };                 // Tokenの連結リストにトークナイズする
 
-void error(char *fmt, ...);
+// parse
+
 void error_at(char *loc, char *fmt, ...);
-bool consume(Token *token, char *op);
-void expect(Token *tok, char *op);
+
+bool at_eof();
 
 Token *tokenize(char *p);
 
@@ -58,7 +61,7 @@ struct Node {
   int val;        // kind == ND_NUMのときのみ
 };
 
-Node *parse(Token *token);
+Node *parse(Token *tok);
 
 // codegen
 

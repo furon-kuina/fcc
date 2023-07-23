@@ -1,11 +1,7 @@
 #include "fcc.h"
 
 void gen(Node *node) {
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
-
-  if (node->kind == ND_NUM) {
+    if (node->kind == ND_NUM) {
     printf("  push %d\n", node->val);
     return;
   }
@@ -49,6 +45,8 @@ void gen(Node *node) {
       printf("  cmp rax, rdi\n");
       printf("  setle al\n");
       printf("  movzb rax, al\n");
+      break;
+    case ND_NUM:
       break;
   }
   printf("  push rax\n");

@@ -18,6 +18,9 @@ int main(int argc, char **argv) {
   Node *node = parse(token);
   fprintf(stderr, "アセンブリ生成開始\n");
 
+  printf(".intel_syntax noprefix\n");
+  printf(".globl main\n");
+  printf("main:\n");
   gen(node);
   printf("  pop rax\n");
   printf("  ret\n");

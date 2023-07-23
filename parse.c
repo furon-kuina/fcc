@@ -3,27 +3,25 @@
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
 // 演算子にだけ使う
-bool consume(Token *token, char *op) {
+bool equal(Token *token, char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     return false;
-  token = token->next;
   return true;
 }
 
 // 次のトークンがopの場合は読み進める
 // そうでない場合はerrorを呼ぶ
-void expect(Token *token, char *op) {
+Token *expect(Token *token, char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     error_at(token->str, "'%C'ではありません", op);
-  token = token->next;
+  return token->next;
 }
 
 int expect_number(Token *token) {
   if (token->kind != TK_NUM) error_at(token->str, "数ではありません");
   int val = token->val;
-  token = token->next;
   return val;
 }
 
@@ -73,93 +71,101 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *mul(Token *tok);
-Node *primary(Token *tok);
-Node *equality(Token *tok);
-Node *relational(Token *tok);
-Node *add(Token *tok);
-Node *unary(Token *tok);
+Node *mul(Token **rest, Token *tok);
+Node *primary(Token **rest, Token *tok);
+Node *equality(Token **rest, Token *tok);
+Node *relational(Token **rest, Token *tok);
+Node *add(Token **rest, Token *tok);
+Node *unary(Token **rest, Token *tok);
 
-Node *expr(Token *tok) {
-  Node *node = equality(tok);
+Node *expr(Token **rest, Token *tok) {
+  Node *node = equality(rest, tok);
   return node;
 }
 
-Node *equality(Token *tok) {
-  Node *node = relational(tok);
+Node *equality(Token **rest, Token *tok) {
+  Node *node = relational(&tok, tok);
   for (;;) {
-    if (consume(tok, "==")) {
-      node = new_node(ND_EQ, node, relational(tok));
-    } else if (consume(tok, "!=")) {
-      node = new_node(ND_NEQ, node, relational(tok));
+    if (equal(tok, "==")) {
+      node = new_node(ND_EQ, node, relational(&tok, tok->next));
+    } else if (equal(tok, "!=")) {
+      node = new_node(ND_NEQ, node, relational(&tok, tok->next));
     } else {
+      *rest = tok;
       return node;
     }
   }
 }
 
-Node *relational(Token *tok) {
-  Node *node = add(tok);
+Node *relational(Token **rest, Token *tok) {
+  Node *node = add(&tok, tok);
   for (;;) {
-    if (consume(tok, "<")) {
-      node = new_node(ND_LT, node, add(tok));
-    } else if (consume(tok, ">")) {
-      node = new_node(ND_LT, add(tok), node);
-    } else if (consume(tok, "<=")) {
-      node = new_node(ND_LE, node, add(tok));
-    } else if (consume(tok, ">=")) {
-      node = new_node(ND_LE, add(tok), node);
+    if (equal(tok, "<")) {
+      node = new_node(ND_LT, node, add(&tok, tok->next));
+    } else if (equal(tok, ">")) {
+      node = new_node(ND_LT, add(&tok, tok->next), node);
+    } else if (equal(tok, "<=")) {
+      node = new_node(ND_LE, node, add(&tok, tok->next));
+    } else if (equal(tok, ">=")) {
+      node = new_node(ND_LE, add(&tok, tok->next), node);
     } else {
+      *rest = tok;
       return node;
     }
   }
 }
 
-Node *add(Token *tok) {
-  Node *node = mul(tok);
+Node *add(Token **rest, Token *tok) {
+  Node *node = mul(&tok, tok);
   for (;;) {
-    if (consume(tok, "+")) {
-      node = new_node(ND_ADD, node, mul(tok));
-    } else if (consume(tok, "-")) {
-      node = new_node(ND_SUB, node, mul(tok));
+    if (equal(tok, "+")) {
+      node = new_node(ND_ADD, node, mul(&tok, tok->next));
+    } else if (equal(tok, "-")) {
+      node = new_node(ND_SUB, node, mul(&tok, tok->next));
     } else {
+      *rest = tok;
       return node;
     }
   }
 }
 
-Node *mul(Token *tok) {
-  Node *node = unary(tok);
+Node *mul(Token **rest, Token *tok) {
+  Node *node = unary(&tok, tok);
   for (;;) {
-    if (consume(tok, "*")) {
-      node = new_node(ND_MUL, node, unary(tok));
-    } else if (consume(tok, "/")) {
-      node = new_node(ND_DIV, node, unary(tok));
+    if (equal(tok, "*")) {
+      node = new_node(ND_MUL, node, unary(&tok, tok->next));
+    } else if (equal(tok, "/")) {
+      node = new_node(ND_DIV, node, unary(&tok, tok->next));
     } else {
+      *rest = tok;
       return node;
     }
   }
 }
 
-Node *unary(Token *tok) {
-  if (consume(tok, "+")) {
-    return primary(tok);
-  } else if (consume(tok, "-")) {
-    return new_node(ND_SUB, new_node_num(0), primary(tok));
+Node *unary(Token **rest, Token *tok) {
+  if (equal(tok, "+")) {
+    return primary(rest, tok->next);
+  } else if (equal(tok, "-")) {
+    return new_node(ND_SUB, new_node_num(0), primary(rest, tok->next));
   }
-  return primary(tok);
+  return primary(rest, tok);
 }
 
-Node *primary(Token *tok) {
-  if (consume(tok, "(")) {
-    Node *node = expr(tok);
-    expect(tok, ")");
+// primary = "(" expr ")" | num
+
+Node *primary(Token **rest, Token *tok) {
+  if (equal(tok, "(")) {
+    Node *node = expr(&tok, tok->next);
+    *rest = expect(tok, ")");
     return node;
   }
-  return new_node_num(expect_number(tok));
+  Node *node = new_node_num(expect_number(tok));
+  *rest = tok->next;
+  return node;
 }
 
 Node *parse(Token *tok) {
-  Node *node = expr(tok);
+  Node *node = expr(&tok, tok);
   return node;
 }
