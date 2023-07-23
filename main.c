@@ -10,20 +10,10 @@ int main(int argc, char **argv) {
   }
   user_input = argv[1];
   fprintf(stderr, "入力を受け取りました: %s\n\n", user_input);
-  fprintf(stderr, "トークナイズ開始\n");
 
   Token *token = tokenize(user_input);
-  fprintf(stderr, "パース開始\n");
-
   Node *node = parse(token);
-  fprintf(stderr, "アセンブリ生成開始\n");
-
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
-  gen(node);
-  printf("  pop rax\n");
-  printf("  ret\n");
+  codegen(node);
 
   return 0;
 }

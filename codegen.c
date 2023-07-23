@@ -1,7 +1,7 @@
 #include "fcc.h"
 
 void gen(Node *node) {
-    if (node->kind == ND_NUM) {
+  if (node->kind == ND_NUM) {
     printf("  push %d\n", node->val);
     return;
   }
@@ -50,4 +50,14 @@ void gen(Node *node) {
       break;
   }
   printf("  push rax\n");
+}
+
+void codegen(Node *node) {
+  fprintf(stderr, "アセンブリ生成開始\n");
+  printf(".intel_syntax noprefix\n");
+  printf(".globl main\n");
+  printf("main:\n");
+  gen(node);
+  printf("  pop rax\n");
+  printf("  ret\n");
 }

@@ -1,27 +1,31 @@
 #include "fcc.h"
 
+Token *token;
+
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
 // 演算子にだけ使う
-bool equal(Token *token, char *op) {
+bool consume(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     return false;
+  token = token->next;
   return true;
 }
 
 // 次のトークンがopの場合は読み進める
 // そうでない場合はerrorを呼ぶ
-Token *expect(Token *token, char *op) {
+void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
     error_at(token->str, "'%C'ではありません", op);
-  return token->next;
+  token = token->next;
 }
 
-int expect_number(Token *token) {
+int expect_number() {
   if (token->kind != TK_NUM) error_at(token->str, "数ではありません");
   int val = token->val;
+  token = token->next;
   return val;
 }
 
@@ -71,101 +75,98 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *mul(Token **rest, Token *tok);
-Node *primary(Token **rest, Token *tok);
-Node *equality(Token **rest, Token *tok);
-Node *relational(Token **rest, Token *tok);
-Node *add(Token **rest, Token *tok);
-Node *unary(Token **rest, Token *tok);
+Node *mul();
+Node *primary();
+Node *equality();
+Node *relational();
+Node *add();
+Node *unary();
 
-Node *expr(Token **rest, Token *tok) {
-  Node *node = equality(rest, tok);
+Node *expr() {
+  Node *node = equality();
   return node;
 }
 
-Node *equality(Token **rest, Token *tok) {
-  Node *node = relational(&tok, tok);
+Node *equality() {
+  Node *node = relational();
   for (;;) {
-    if (equal(tok, "==")) {
-      node = new_node(ND_EQ, node, relational(&tok, tok->next));
-    } else if (equal(tok, "!=")) {
-      node = new_node(ND_NEQ, node, relational(&tok, tok->next));
+    if (consume("==")) {
+      node = new_node(ND_EQ, node, relational());
+    } else if (consume("!=")) {
+      node = new_node(ND_NEQ, node, relational());
     } else {
-      *rest = tok;
       return node;
     }
   }
 }
 
-Node *relational(Token **rest, Token *tok) {
-  Node *node = add(&tok, tok);
+Node *relational() {
+  Node *node = add();
   for (;;) {
-    if (equal(tok, "<")) {
-      node = new_node(ND_LT, node, add(&tok, tok->next));
-    } else if (equal(tok, ">")) {
-      node = new_node(ND_LT, add(&tok, tok->next), node);
-    } else if (equal(tok, "<=")) {
-      node = new_node(ND_LE, node, add(&tok, tok->next));
-    } else if (equal(tok, ">=")) {
-      node = new_node(ND_LE, add(&tok, tok->next), node);
+    if (consume("<")) {
+      node = new_node(ND_LT, node, add());
+    } else if (consume(">")) {
+      node = new_node(ND_LT, add(), node);
+    } else if (consume("<=")) {
+      node = new_node(ND_LE, node, add());
+    } else if (consume(">=")) {
+      node = new_node(ND_LE, add(), node);
     } else {
-      *rest = tok;
       return node;
     }
   }
 }
 
-Node *add(Token **rest, Token *tok) {
-  Node *node = mul(&tok, tok);
+Node *add() {
+  Node *node = mul();
   for (;;) {
-    if (equal(tok, "+")) {
-      node = new_node(ND_ADD, node, mul(&tok, tok->next));
-    } else if (equal(tok, "-")) {
-      node = new_node(ND_SUB, node, mul(&tok, tok->next));
+    if (consume("+")) {
+      node = new_node(ND_ADD, node, mul());
+    } else if (consume("-")) {
+      node = new_node(ND_SUB, node, mul());
     } else {
-      *rest = tok;
       return node;
     }
   }
 }
 
-Node *mul(Token **rest, Token *tok) {
-  Node *node = unary(&tok, tok);
+Node *mul() {
+  Node *node = unary();
   for (;;) {
-    if (equal(tok, "*")) {
-      node = new_node(ND_MUL, node, unary(&tok, tok->next));
-    } else if (equal(tok, "/")) {
-      node = new_node(ND_DIV, node, unary(&tok, tok->next));
+    if (consume("*")) {
+      node = new_node(ND_MUL, node, unary());
+    } else if (consume("/")) {
+      node = new_node(ND_DIV, node, unary());
     } else {
-      *rest = tok;
       return node;
     }
   }
 }
 
-Node *unary(Token **rest, Token *tok) {
-  if (equal(tok, "+")) {
-    return primary(rest, tok->next);
-  } else if (equal(tok, "-")) {
-    return new_node(ND_SUB, new_node_num(0), primary(rest, tok->next));
+Node *unary() {
+  if (consume("+")) {
+    return primary();
+  } else if (consume("-")) {
+    return new_node(ND_SUB, new_node_num(0), primary());
   }
-  return primary(rest, tok);
+  return primary();
 }
 
 // primary = "(" expr ")" | num
 
-Node *primary(Token **rest, Token *tok) {
-  if (equal(tok, "(")) {
-    Node *node = expr(&tok, tok->next);
-    *rest = expect(tok, ")");
+Node *primary() {
+  if (consume("(")) {
+    Node *node = expr();
+    expect(")");
     return node;
   }
-  Node *node = new_node_num(expect_number(tok));
-  *rest = tok->next;
+  Node *node = new_node_num(expect_number());
   return node;
 }
 
 Node *parse(Token *tok) {
-  Node *node = expr(&tok, tok);
+  fprintf(stderr, "パース開始\n");
+  token = tok;
+  Node *node = expr();
   return node;
 }

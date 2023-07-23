@@ -65,4 +65,4 @@ Node *parse(Token *tok);
 
 // codegen
 
-void gen(Node *node);
+void codegen(Node *node);
