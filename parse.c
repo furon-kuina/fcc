@@ -13,8 +13,13 @@ bool consume(char *op) {
   return true;
 }
 
+bool expect_ident() {
+  if (token->kind != TK_IDENT) return NULL;
+  return token->str[0];
+}
+
 // 次のトークンがopの場合は読み進める
-// そうでない場合はerrorを呼ぶ
+// そうでない場合はerror
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
@@ -28,6 +33,8 @@ int expect_number() {
   token = token->next;
   return val;
 }
+
+bool at_eof() { return token->kind == TK_EOF; }
 
 int node_cnt = 1;
 
@@ -51,6 +58,10 @@ char *node_dbg(Node *node) {
       return "!=";
     case ND_NUM:
       return "Number";
+    case ND_LVAR:
+      return "LVAR";
+    case ND_ASSIGN:
+      return "=";
   }
 }
 
@@ -75,6 +86,11 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *code[100];
+
+Node *stmt();
+Node *expr();
+Node *assign();
 Node *mul();
 Node *primary();
 Node *equality();
@@ -82,8 +98,28 @@ Node *relational();
 Node *add();
 Node *unary();
 
-Node *expr() {
+void program() {
+  int i = 0;
+  while (!at_eof()) {
+    code[i] = stmt();
+    i++;
+  }
+  code[i] = NULL;
+}
+
+Node *stmt() {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
+
+Node *expr() { return assign(); }
+
+Node *assign() {
   Node *node = equality();
+  if (consume("=")) {
+    node = new_node(ND_ASSIGN, node, assign());
+  }
   return node;
 }
 
@@ -146,13 +182,14 @@ Node *mul() {
 Node *unary() {
   if (consume("+")) {
     return primary();
-  } else if (consume("-")) {
+  }
+  if (consume("-")) {
     return new_node(ND_SUB, new_node_num(0), primary());
   }
   return primary();
 }
 
-// primary = "(" expr ")" | num
+// primary = num | ident | "(" expr ")"
 
 Node *primary() {
   if (consume("(")) {
@@ -160,13 +197,20 @@ Node *primary() {
     expect(")");
     return node;
   }
+  if (token->kind == TK_IDENT) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    node->offset = (token->str[0] - 'a' + 1) * 8;
+    token = token->next;
+    return node;
+  }
   Node *node = new_node_num(expect_number());
   return node;
 }
 
-Node *parse(Token *tok) {
+Node **parse(Token *tok) {
   fprintf(stderr, "パース開始\n");
   token = tok;
-  Node *node = expr();
-  return node;
+  program();
+  return code;
 }

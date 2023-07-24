@@ -4,12 +4,13 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+    
     {
         "name": "launch_cpp",
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["-1+5"],
+        "args": ["'a=1;a;'"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],

@@ -10,6 +10,7 @@
 
 typedef enum {
   TK_RESERVED,  // 記号
+  TK_IDENT,     // 識別子
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
@@ -26,30 +27,37 @@ struct Token {
 
 // parse
 
+void error(char *fmt, ...);
+
 void error_at(char *loc, char *fmt, ...);
 
 bool at_eof();
 
 Token *tokenize(char *p);
 
-// expr       = equality
+// program    = stmt*
+// stmt       = expr ";"
+// expr       = assign
+// assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add        = mul ("+" mul | "-" mul)*
 // mul        = primary ("*" primary | "/" primary)*
 // unary      = ( "+" | "-" )? primary
-// primary    = num | "(" expr ")"
+// primary    = num | ident | "(" expr ")"
 
 typedef enum {
-  ND_ADD,  // +
-  ND_SUB,  // -
-  ND_MUL,  // *
-  ND_DIV,  // /
-  ND_LT,   // <
-  ND_LE,   // <=
-  ND_EQ,   // ==
-  ND_NEQ,  // !=
-  ND_NUM,  // 整数
+  ND_ADD,     // +
+  ND_SUB,     // -
+  ND_MUL,     // *
+  ND_DIV,     // /
+  ND_LT,      // <
+  ND_LE,      // <=
+  ND_EQ,      // ==
+  ND_NEQ,     // !=
+  ND_NUM,     // 整数
+  ND_ASSIGN,  // =
+  ND_LVAR,    // 左辺値
 } NodeKind;
 
 typedef struct Node Node;
@@ -59,10 +67,11 @@ struct Node {
   Node *lhs;      // 左オペランド
   Node *rhs;      // 右オペランド
   int val;        // kind == ND_NUMのときのみ
+  int offset;     // kind == ND_LVARのときのみ
 };
 
-Node *parse(Token *tok);
+Node **parse(Token *tok);
 
 // codegen
 
-void codegen(Node *node);
+void codegen(Node **code);
