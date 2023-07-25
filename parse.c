@@ -1,6 +1,7 @@
 #include "fcc.h"
 
 Token *token;
+LVar *locals;
 
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
@@ -33,6 +34,8 @@ int expect_number() {
   token = token->next;
   return val;
 }
+
+LVar *locals;
 
 bool at_eof() { return token->kind == TK_EOF; }
 
@@ -84,6 +87,15 @@ Node *new_node_num(int val) {
   fprintf(stderr, "ノード%d\n", node_cnt++);
   fprintf(stderr, "ノードの種類: %s, 値%d\n", node_dbg(node), node->val);
   return node;
+}
+
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+      return var;
+    }
+  }
+  return NULL;
 }
 
 Node *code[100];
@@ -200,8 +212,21 @@ Node *primary() {
   if (token->kind == TK_IDENT) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->offset = (token->str[0] - 'a' + 1) * 8;
+
+    LVar *lvar = find_lvar(token);
+    if (lvar) {
+      node->offset = lvar->offset;
+    } else {
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = token->str;
+      lvar->len = token->len;
+      lvar->offset = locals ? locals->offset + 8 : 8;
+      node->offset = lvar->offset;
+      locals = lvar;
+    }
     token = token->next;
+
     return node;
   }
   Node *node = new_node_num(expect_number());

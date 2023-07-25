@@ -60,6 +60,14 @@ typedef enum {
   ND_LVAR,    // 左辺値
 } NodeKind;
 
+typedef struct LVar LVar;
+struct LVar {
+  LVar *next;
+  char *name;
+  int len;
+  int offset;
+};
+
 typedef struct Node Node;
 
 struct Node {

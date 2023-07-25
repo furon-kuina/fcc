@@ -25,6 +25,15 @@ void error_at(char *loc, char *fmt, ...) {
 
 int token_cnt = 1;
 
+int ident_len(char *p) {
+  int len = 0;
+  while ('a' <= *p && *p <= 'z') {
+    len++;
+    p++;
+  }
+  return len;
+}
+
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   fprintf(stderr, "\nトークン%d\n", token_cnt++);
   fprintf(stderr, "トークンの種類: %d\n", kind);
@@ -70,8 +79,9 @@ Token *tokenize(char *p) {
     }
 
     if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
-      cur->len = 1;
+      int len = ident_len(p);
+      cur = new_token(TK_IDENT, cur, p, len);
+      p += len;
       continue;
     }
 
