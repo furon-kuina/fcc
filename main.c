@@ -73,8 +73,8 @@ void print_node(Node *node) {
 void print_code(Node **code) {
   int i = 0;
   while (code[i]) {
-    fprintf(stderr, "%i番目のコード: ", ++i);
-    print_node(code[i]);
+    fprintf(stderr, "\n%i番目のコード: ", i);
+    print_node(code[i++]);
   }
 }
 
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
   print_token_list(token);
   Node **code = parse(token);
   print_code(code);
-  // codegen(code);
+  codegen(code);
 
   return 0;
 }

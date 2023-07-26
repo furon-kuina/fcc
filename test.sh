@@ -72,4 +72,5 @@ assert 1 "_=1;_;"
 assert 4 "__=1;___=3 ;___+__;"
 assert 2 "return 2;1;"
 assert 3 "a=3;return a;b=1;"
+assert 2 "a=1;a=2;a;"
 echo OK
