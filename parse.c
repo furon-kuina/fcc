@@ -39,44 +39,14 @@ LVar *locals;
 
 bool at_eof() { return token->kind == TK_EOF; }
 
-int node_cnt = 1;
-
-char *node_dbg(Node *node) {
-  switch (node->kind) {
-    case ND_ADD:
-      return "+";
-    case ND_SUB:
-      return "-";
-    case ND_MUL:
-      return "*";
-    case ND_DIV:
-      return "/";
-    case ND_LT:
-      return "<";
-    case ND_LE:
-      return "<=";
-    case ND_EQ:
-      return "==";
-    case ND_NEQ:
-      return "!=";
-    case ND_NUM:
-      return "Number";
-    case ND_LVAR:
-      return "LVAR";
-    case ND_ASSIGN:
-      return "=";
-  }
-}
+int node_cnt = 0;
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
   node->lhs = lhs;
   node->rhs = rhs;
-  fprintf(stderr, "ノード%d\n", node_cnt++);
-  fprintf(stderr, "ノードの種類: %s\n", node_dbg(node));
-  fprintf(stderr, "左の子: %s, 右の子: %s\n", node_dbg(node->lhs),
-          node_dbg(node->rhs));
+  node->id = node_cnt++;
   return node;
 }
 
@@ -84,8 +54,7 @@ Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
   node->val = val;
-  fprintf(stderr, "ノード%d\n", node_cnt++);
-  fprintf(stderr, "ノードの種類: %s, 値%d\n", node_dbg(node), node->val);
+  node->id = node_cnt++;
   return node;
 }
 
@@ -120,7 +89,15 @@ void program() {
 }
 
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+  if (token->kind == TK_RETURN) {
+    token = token->next;
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_RETURN;
+    node->lhs = expr();
+  } else {
+    node = expr();
+  }
   expect(";");
   return node;
 }

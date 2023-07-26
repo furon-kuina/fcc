@@ -11,6 +11,7 @@
 typedef enum {
   TK_RESERVED,  // 記号
   TK_IDENT,     // 識別子
+  TK_RETURN,    // return
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
@@ -36,7 +37,7 @@ bool at_eof();
 Token *tokenize(char *p);
 
 // program    = stmt*
-// stmt       = expr ";"
+// stmt       = expr ";" | "return" expr ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -58,6 +59,7 @@ typedef enum {
   ND_NUM,     // 整数
   ND_ASSIGN,  // =
   ND_LVAR,    // 左辺値
+  ND_RETURN,  // return
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -76,6 +78,7 @@ struct Node {
   Node *rhs;      // 右オペランド
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
+  int id;         // デバッグ用
 };
 
 Node **parse(Token *tok);

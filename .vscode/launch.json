@@ -10,7 +10,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["'a=1;a;'"],
+        "args": ["'return 2;1;'"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],

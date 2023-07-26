@@ -23,6 +23,61 @@ void print_token_list(Token *token) {
   fprintf(stderr, "]\n");
 }
 
+char *node_dbg(Node *node) {
+  switch (node->kind) {
+    case ND_ADD:
+      return "+";
+    case ND_SUB:
+      return "-";
+    case ND_MUL:
+      return "*";
+    case ND_DIV:
+      return "/";
+    case ND_LT:
+      return "<";
+    case ND_LE:
+      return "<=";
+    case ND_EQ:
+      return "==";
+    case ND_NEQ:
+      return "!=";
+    case ND_NUM:
+      return "Number";
+    case ND_LVAR:
+      return "LVAR";
+    case ND_ASSIGN:
+      return "=";
+    case ND_RETURN:
+      return "return";
+  }
+}
+
+void print_node(Node *node) {
+  fprintf(stderr, "\n");
+  fprintf(stderr, "ノード番号: %i\n", node->id);
+  fprintf(stderr, "ノード種類: %s\n", node_dbg(node));
+  if (node->lhs) {
+    fprintf(stderr, "左の子: %i\n", node->lhs->id);
+  }
+  if (node->rhs) {
+    fprintf(stderr, "右の子: %i\n", node->rhs->id);
+  }
+  if (node->lhs) {
+    print_node(node->lhs);
+  }
+  if (node->rhs) {
+    print_node(node->rhs);
+  }
+}
+
+void print_code(Node **code) {
+  int i = 0;
+  while (code[i]) {
+    fprintf(stderr, "%i番目のコード: ", ++i);
+    print_node(code[i]);
+  }
+}
+
 int main(int argc, char **argv) {
   fprintf(stderr, "コンパイル開始\n");
   if (argc != 2) {
@@ -35,7 +90,8 @@ int main(int argc, char **argv) {
   Token *token = tokenize(user_input);
   print_token_list(token);
   Node **code = parse(token);
-  codegen(code);
+  print_code(code);
+  // codegen(code);
 
   return 0;
 }
