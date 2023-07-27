@@ -17,6 +17,9 @@ assert() {
   fi
 }
 
+assert 1  "i=0;i=i+1;i;"
+assert 10 "i=0;while(i<10)i=i+1;i;"
+assert 128 "i=2;while(i<100)i=2*i;i;"
 assert 0 "0;"
 assert 42 "42;"
 assert 21 "5+20-4;"
@@ -73,4 +76,5 @@ assert 4 "__=1;___=3 ;___+__;"
 assert 2 "return 2;1;"
 assert 3 "a=3;return a;b=1;"
 assert 2 "a=1;a=2;a;"
+assert 5 "a=3; b = 2; return a+b;"
 echo OK

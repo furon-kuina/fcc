@@ -12,6 +12,7 @@ typedef enum {
   TK_RESERVED,  // 記号
   TK_IDENT,     // 識別子
   TK_RETURN,    // return
+  TK_WHILE,     // while
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
@@ -24,20 +25,19 @@ struct Token {
   int val;         // TK_NUMの数値
   char *str;       // トークン文字列
   int len;         // トークン長
-};                 // Tokenの連結リストにトークナイズする
+};
 
 // parse
 
 void error(char *fmt, ...);
-
 void error_at(char *loc, char *fmt, ...);
-
 bool at_eof();
-
 Token *tokenize(char *p);
 
 // program    = stmt*
-// stmt       = expr ";" | "return" expr ";"
+// stmt       = expr ";"
+//            | "return" expr ";"
+//            | "while" "(" expr ")" stmt
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -60,6 +60,7 @@ typedef enum {
   ND_ASSIGN,  // =
   ND_LVAR,    // 左辺値
   ND_RETURN,  // return
+  ND_WHILE,   // while
 } NodeKind;
 
 typedef struct LVar LVar;

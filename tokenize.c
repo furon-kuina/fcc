@@ -25,12 +25,16 @@ void error_at(char *loc, char *fmt, ...) {
 
 int token_cnt = 1;
 
-bool is_alnum(char c) {
-  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
-         ('0' <= c && c <= '9') || (c == '_');
+bool is_al(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }
 
+bool is_alnum(char c) { return is_al(c) || ('0' <= c && c <= '9'); }
+
 int ident_len(char *p) {
+  if (!is_al(*p)) {
+    return -1;
+  }
   int len = 0;
   while (is_alnum(*p)) {
     len++;
@@ -89,8 +93,13 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    // *pが数字なら上で抜けているのでis_alnumを使ってOK
-    if (is_alnum(*p)) {
+    if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+      cur = new_token(TK_WHILE, cur, p, 5);
+      p += 5;
+      continue;
+    }
+
+    if (is_al(*p)) {
       int len = ident_len(p);
       cur = new_token(TK_IDENT, cur, p, len);
       p += len;

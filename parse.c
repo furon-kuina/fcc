@@ -1,7 +1,11 @@
 #include "fcc.h"
 
-Token *token;
-LVar *locals;
+// グローバル変数
+
+Token *token;      // パーサに入力として与えられるトークン列
+LVar *locals;      // ローカル変数を表す連結リスト
+Node *code[100];   // ";"で区切られたコード
+int node_cnt = 0;  // デバッグ用: ノードの数
 
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
@@ -35,11 +39,7 @@ int expect_number() {
   return val;
 }
 
-LVar *locals;
-
 bool at_eof() { return token->kind == TK_EOF; }
-
-int node_cnt = 0;
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
@@ -67,8 +67,6 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
-Node *code[100];
-
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -93,12 +91,23 @@ Node *stmt() {
   if (token->kind == TK_RETURN) {
     token = token->next;
     node = calloc(1, sizeof(Node));
+    node_cnt++;
     node->kind = ND_RETURN;
     node->lhs = expr();
+    expect(";");
+  } else if (token->kind == TK_WHILE) {
+    token = token->next;
+    node = calloc(1, sizeof(Node));
+    node_cnt++;
+    node->kind = ND_WHILE;
+    expect("(");
+    node->lhs = expr();
+    expect(")");
+    node->rhs = stmt();
   } else {
     node = expr();
+    expect(";");
   }
-  expect(";");
   return node;
 }
 
@@ -189,6 +198,7 @@ Node *primary() {
   if (token->kind == TK_IDENT) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
+    node_cnt++;
 
     LVar *lvar = find_lvar(token);
     if (lvar) {

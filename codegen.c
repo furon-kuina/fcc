@@ -9,6 +9,8 @@ void gen_lval(Node *node) {
   printf("  push rax\n");
 }
 
+int xxx = 0;
+
 void gen(Node *node) {
   switch (node->kind) {
     case ND_NUM:
@@ -35,6 +37,16 @@ void gen(Node *node) {
       printf("  mov rsp, rbp\n");
       printf("  pop rbp\n");
       printf("  ret\n");
+      return;
+    case ND_WHILE:
+      printf(".Lbegin%i:\n", xxx);
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .Lend%i\n", xxx);
+      gen(node->rhs);
+      printf("  jmp .Lbegin%i\n", xxx);
+      printf(".Lend%i:\n", xxx);
       return;
   }
 

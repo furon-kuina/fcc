@@ -49,6 +49,8 @@ char *node_dbg(Node *node) {
       return "=";
     case ND_RETURN:
       return "return";
+    case ND_WHILE:
+      return "while";
   }
 }
 
