@@ -104,6 +104,19 @@ Node *stmt() {
     node->lhs = expr();
     expect(")");
     node->rhs = stmt();
+  } else if (token->kind == TK_IF) {
+    token = token->next;
+    node = calloc(1, sizeof(Node));
+    node_cnt++;
+    node->kind = ND_IF;
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->lhs = stmt();
+    if (token->kind == TK_ELSE) {
+      token = token->next;
+      node->rhs = stmt();
+    }
   } else {
     node = expr();
     expect(";");

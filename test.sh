@@ -17,7 +17,10 @@ assert() {
   fi
 }
 
-assert 1  "i=0;i=i+1;i;"
+assert 1 "i=1;if(i!=0)return 1;else return 2;"
+assert 1 "i=0;while(i<10)if(i==0)return 1;else return 0;"
+assert 11 "i=0;while(i<10)if(i<5)i=i+1;else i=i+2;return i;"
+assert 1 "i=0;i=i+1;i;"
 assert 10 "i=0;while(i<10)i=i+1;i;"
 assert 128 "i=2;while(i<100)i=2*i;i;"
 assert 0 "0;"

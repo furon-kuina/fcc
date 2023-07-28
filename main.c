@@ -51,6 +51,8 @@ char *node_dbg(Node *node) {
       return "return";
     case ND_WHILE:
       return "while";
+    case ND_IF:
+      return "if";
   }
 }
 
