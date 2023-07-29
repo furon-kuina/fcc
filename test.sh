@@ -17,6 +17,7 @@ assert() {
   fi
 }
 
+assert 10 "i=0;for(i=0;i<10;i=i+1)1+1;return i;"
 assert 1 "i=1;if(i!=0)return 1;else return 2;"
 assert 1 "i=0;while(i<10)if(i==0)return 1;else return 0;"
 assert 11 "i=0;while(i<10)if(i<5)i=i+1;else i=i+2;return i;"

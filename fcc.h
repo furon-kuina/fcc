@@ -15,6 +15,7 @@ typedef enum {
   TK_WHILE,     // while
   TK_IF,        // if
   TK_ELSE,      // else
+  TK_FOR,       // for
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
 } TokenKind;
@@ -41,6 +42,7 @@ Token *tokenize(char *p);
 //            | "return" expr ";"
 //            | "while" "(" expr ")" stmt
 //            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -65,6 +67,7 @@ typedef enum {
   ND_RETURN,  // return
   ND_WHILE,   // while
   ND_IF,      // if
+  ND_FOR,     // for
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -81,7 +84,9 @@ struct Node {
   NodeKind kind;  // ノードの種類
   Node *lhs;      // 左オペランド
   Node *rhs;      // 右オペランド
-  Node *cond;     // kind == ND_IFのときのみ
+  Node *init;     // kind == ND_FORのときのみ
+  Node *cond;     // kind == ND_IF, ND_FORのときのみ
+  Node *update;   // kind == ND_FORのときのみ
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
   int id;         // デバッグ用

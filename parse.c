@@ -117,6 +117,26 @@ Node *stmt() {
       token = token->next;
       node->rhs = stmt();
     }
+  } else if (token->kind == TK_FOR) {
+    token = token->next;
+    node = calloc(1, sizeof(Node));
+    node_cnt++;
+    node->kind = ND_FOR;
+    expect("(");
+    if (!consume(";")) {
+      node->init = expr();
+      consume(";");
+    }
+    if (!consume(";")) {
+      node->cond = expr();
+      consume(";");
+    }
+    if (!consume(";")) {
+      node->update = expr();
+    }
+    expect(")");
+    node->lhs = stmt();
+
   } else {
     node = expr();
     expect(";");
