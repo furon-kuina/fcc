@@ -89,7 +89,7 @@ void gen(Node *node) {
       return;
     }
     case ND_BLOCK: {
-      Stmt *cur = node->stmt;
+      Stmt *cur = node->stmts;
       while (cur) {
         gen(cur->node);
         printf("  pop rax\n");
@@ -97,6 +97,9 @@ void gen(Node *node) {
       }
       return;
     }
+    case ND_CALL:
+      printf("  call %.*s\n", node->fname_len, node->fname);
+      return;
     default:
       break;
   }

@@ -51,7 +51,10 @@ Token *tokenize(char *p);
 // add        = mul ("+" mul | "-" mul)*
 // mul        = primary ("*" primary | "/" primary)*
 // unary      = ( "+" | "-" )? primary
-// primary    = num | ident | "(" expr ")"
+// primary    = num
+//            | ident ("(" ")")?
+//            | "(" expr ")"
+//
 
 typedef enum {
   ND_ADD,     // +
@@ -70,6 +73,7 @@ typedef enum {
   ND_IF,      // if
   ND_FOR,     // for
   ND_BLOCK,   // ブロック
+  ND_CALL,    // 関数呼び出し
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -95,9 +99,11 @@ struct Node {
   Node *init;     // kind == ND_FORのときのみ
   Node *cond;     // kind == ND_IF, ND_FORのときのみ
   Node *update;   // kind == ND_FORのときのみ
-  Stmt *stmt;     // kind == ND_BLOCKのときのみ
+  Stmt *stmts;    // kind == ND_BLOCKのときのみ
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
+  char *fname;    // 関数名 kind == ND_CALLのときのみ
+  int fname_len;  // 関数名 kind == ND_CALLのときのみ
   int id;         // デバッグ用
 };
 

@@ -99,7 +99,7 @@ Node *stmt() {
     }
     node = calloc(1, sizeof(Node));
     node->kind = ND_BLOCK;
-    node->stmt = head.next;
+    node->stmts = head.next;
   } else if (token->kind == TK_RETURN) {
     token = token->next;
     node = calloc(1, sizeof(Node));
@@ -242,6 +242,18 @@ Node *primary() {
   }
   if (token->kind == TK_IDENT) {
     Node *node = calloc(1, sizeof(Node));
+    Token *tmp = token;
+    token = token->next;
+    if (consume("(")) {
+      // 関数名だった場合
+      expect(")");
+      node->kind = ND_CALL;
+      node->fname = tmp->str;
+      node->fname_len = tmp->len;
+      return node;
+    }
+    token = tmp;
+
     node->kind = ND_LVAR;
     node_cnt++;
 

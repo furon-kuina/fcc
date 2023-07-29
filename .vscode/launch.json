@@ -10,7 +10,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["i=0;for(i=0;i<10;){if(i<5){i=i+1;}else{i=i+2;}}return i;"],
+        "args": ["foo();1;"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],
