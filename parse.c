@@ -88,7 +88,19 @@ void program() {
 
 Node *stmt() {
   Node *node;
-  if (token->kind == TK_RETURN) {
+  if (consume("{")) {
+    Stmt head;
+    head.next = NULL;
+    Stmt *cur = &head;
+    while (!consume("}")) {
+      Stmt *new = calloc(1, sizeof(Stmt));
+      new->node = stmt();
+      cur->next = new;
+    }
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_BLOCK;
+    node->stmt = head.next;
+  } else if (token->kind == TK_RETURN) {
     token = token->next;
     node = calloc(1, sizeof(Node));
     node_cnt++;
@@ -125,16 +137,16 @@ Node *stmt() {
     expect("(");
     if (!consume(";")) {
       node->init = expr();
-      consume(";");
+      expect(";");
     }
     if (!consume(";")) {
       node->cond = expr();
-      consume(";");
+      expect(";");
     }
-    if (!consume(";")) {
+    if (!consume(")")) {
       node->update = expr();
+      expect(")");
     }
-    expect(")");
     node->lhs = stmt();
 
   } else {

@@ -39,6 +39,7 @@ Token *tokenize(char *p);
 
 // program    = stmt*
 // stmt       = expr ";"
+//            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "while" "(" expr ")" stmt
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -68,6 +69,7 @@ typedef enum {
   ND_WHILE,   // while
   ND_IF,      // if
   ND_FOR,     // for
+  ND_BLOCK,   // ブロック
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -80,6 +82,12 @@ struct LVar {
 
 typedef struct Node Node;
 
+typedef struct Stmt Stmt;
+struct Stmt {
+  Stmt *next;
+  Node *node;
+};
+
 struct Node {
   NodeKind kind;  // ノードの種類
   Node *lhs;      // 左オペランド
@@ -87,6 +95,7 @@ struct Node {
   Node *init;     // kind == ND_FORのときのみ
   Node *cond;     // kind == ND_IF, ND_FORのときのみ
   Node *update;   // kind == ND_FORのときのみ
+  Stmt *stmt;     // kind == ND_BLOCKのときのみ
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
   int id;         // デバッグ用

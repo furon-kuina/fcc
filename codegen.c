@@ -61,23 +61,40 @@ void gen(Node *node) {
       gen(node->lhs);
       printf("  jmp .Lend%i\n", id);
       printf(".Lelse%i:\n", id);
-      gen(node->rhs);
+      if (node->rhs) {
+        gen(node->rhs);
+      }
       printf(".Lend%i:\n", id);
       return;
     }
     case ND_FOR: {
       int id = xxx;
       xxx++;
-      gen(node->init);
+      if (node->init) {
+        gen(node->init);
+      }
       printf(".Lbegin%i:\n", id);
-      gen(node->cond);
+      if (node->cond) {
+        gen(node->cond);
+      }
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
       printf("  je  .Lend%i\n", id);
       gen(node->lhs);
-      gen(node->update);
+      if (node->update) {
+        gen(node->update);
+      }
       printf("  jmp .Lbegin%i\n", id);
       printf(".Lend%i:\n", id);
+      return;
+    }
+    case ND_BLOCK: {
+      Stmt *cur = node->stmt;
+      while (cur) {
+        gen(cur->node);
+        printf("  pop rax\n");
+        cur = cur->next;
+      }
       return;
     }
     default:

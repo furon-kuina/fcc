@@ -55,6 +55,8 @@ char *node_dbg(Node *node) {
       return "if";
     case ND_FOR:
       return "for";
+    case ND_BLOCK:
+      return "block";
   }
 }
 
