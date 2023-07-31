@@ -97,9 +97,18 @@ void gen(Node *node) {
       }
       return;
     }
-    case ND_CALL:
+    case ND_CALL: {
+      Arg *args = node->args;
+      for (int i = 0; args != NULL && i < 1; ++i) {
+        gen(args->node);
+        if (i == 0) {
+          printf("  pop rdi\n");
+        }
+        args = args->next;
+      }
       printf("  call %.*s\n", node->fname_len, node->fname);
       return;
+    }
     default:
       break;
   }

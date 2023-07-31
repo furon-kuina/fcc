@@ -52,9 +52,8 @@ Token *tokenize(char *p);
 // mul        = primary ("*" primary | "/" primary)*
 // unary      = ( "+" | "-" )? primary
 // primary    = num
-//            | ident ("(" ")")?
+//            | ident ("(" expr? ")")?
 //            | "(" expr ")"
-//
 
 typedef enum {
   ND_ADD,     // +
@@ -92,6 +91,12 @@ struct Stmt {
   Node *node;
 };
 
+typedef struct Arg Arg;
+struct Arg {
+  Arg *next;
+  Node *node;
+};
+
 struct Node {
   NodeKind kind;  // ノードの種類
   Node *lhs;      // 左オペランド
@@ -100,6 +105,7 @@ struct Node {
   Node *cond;     // kind == ND_IF, ND_FORのときのみ
   Node *update;   // kind == ND_FORのときのみ
   Stmt *stmts;    // kind == ND_BLOCKのときのみ
+  Arg *args;      // kind == ND_CALLのときのみ
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
   char *fname;    // 関数名 kind == ND_CALLのときのみ
