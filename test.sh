@@ -17,6 +17,8 @@ assert() {
   fi
 }
 
+assert 124 "x=1;return g1(123)+x;"
+assert 123 "return g1(123);"
 assert 2 "f6(1,2,3,4,5,6);return 2;"
 assert 2 "f5(1,2,3,4,5);return 2;"
 assert 2 "f4(1,2,3,4);return 2;"

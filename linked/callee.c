@@ -15,3 +15,5 @@ void f5(int x1, int x2, int x3, int x4, int x5) {
 void f6(int x1, int x2, int x3, int x4, int x5, int x6) {
   printf("Arguments: %i, %i, %i, %i, %i, %i\n", x1, x2, x3, x4, x5, x6);
 }
+
+int g1(int x) { return x; }
