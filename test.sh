@@ -17,6 +17,10 @@ assert() {
   fi
 }
 
+assert 2 "f6(1,2,3,4,5,6);return 2;"
+assert 2 "f5(1,2,3,4,5);return 2;"
+assert 2 "f4(1,2,3,4);return 2;"
+assert 2 "f3(1,2,3);return 2;"
 assert 1 "foo();return 1;"
 assert 2 "f2(1,2);return 2;"
 assert 2 "f1(1);return 2;"

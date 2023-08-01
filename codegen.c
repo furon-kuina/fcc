@@ -101,12 +101,20 @@ void gen(Node *node) {
       // よくわかってないのでrspを16の倍数に調整していない
       // 不都合が出るまでは放置
       Arg *arg = node->args;
-      for (int i = 0; arg != NULL && i < 2; ++i) {
+      for (int i = 0; arg != NULL && i < 6; ++i) {
         gen(arg->node);
         if (i == 0) {
           printf("  pop rdi\n");
         } else if (i == 1) {
           printf("  pop rsi\n");
+        } else if (i == 2) {
+          printf("  pop rdx\n");
+        } else if (i == 3) {
+          printf("  pop rcx\n");
+        } else if (i == 4) {
+          printf("  pop r8\n");
+        } else if (i == 5) {
+          printf("  pop r9\n");
         }
         arg = arg->next;
       }
