@@ -98,6 +98,8 @@ void gen(Node *node) {
       return;
     }
     case ND_CALL: {
+      // よくわかってないのでrspを16の倍数に調整していない
+      // 不都合が出るまでは放置
       Arg *args = node->args;
       for (int i = 0; args != NULL && i < 1; ++i) {
         gen(args->node);

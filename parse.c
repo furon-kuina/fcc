@@ -96,6 +96,7 @@ Node *stmt() {
       Stmt *new = calloc(1, sizeof(Stmt));
       new->node = stmt();
       cur->next = new;
+      cur = cur->next;
     }
     node = calloc(1, sizeof(Node));
     node->kind = ND_BLOCK;
