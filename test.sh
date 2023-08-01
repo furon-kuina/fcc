@@ -17,8 +17,9 @@ assert() {
   fi
 }
 
-assert 2 "f1(1);return 2;"
 assert 1 "foo();return 1;"
+assert 2 "f2(1,2);return 2;"
+assert 2 "f1(1);return 2;"
 assert 1 "i=1;{}return i;"
 assert 2 "i=1;for(;;){}return i+1;"
 assert 1 "i=0;while(i<10)if(i==0)return 1;return 0;"

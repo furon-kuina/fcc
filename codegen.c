@@ -100,13 +100,15 @@ void gen(Node *node) {
     case ND_CALL: {
       // よくわかってないのでrspを16の倍数に調整していない
       // 不都合が出るまでは放置
-      Arg *args = node->args;
-      for (int i = 0; args != NULL && i < 1; ++i) {
-        gen(args->node);
+      Arg *arg = node->args;
+      for (int i = 0; arg != NULL && i < 2; ++i) {
+        gen(arg->node);
         if (i == 0) {
           printf("  pop rdi\n");
+        } else if (i == 1) {
+          printf("  pop rsi\n");
         }
-        args = args->next;
+        arg = arg->next;
       }
       printf("  call %.*s\n", node->fname_len, node->fname);
       return;

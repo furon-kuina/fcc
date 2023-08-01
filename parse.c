@@ -247,14 +247,18 @@ Node *primary() {
     token = token->next;
     if (consume("(")) {
       // 関数名だった場合
-      if (!consume(")")) {
-        // 引数が空でない場合
-        Arg *args = calloc(1, sizeof(Arg));
-        args->node = expr();
-        args->next = NULL;
-        node->args = args;
-        expect(")");
+      Arg head;
+      head.next = NULL;
+      Arg *cur = &head;
+      while (!consume(")")) {
+        Arg *arg = calloc(1, sizeof(Arg));
+        arg->node = expr();
+        arg->next = NULL;
+        cur->next = arg;
+        cur = cur->next;
+        consume(",");
       }
+      node->args = head.next;
       node->kind = ND_CALL;
       node->fname = tmp->str;
       node->fname_len = tmp->len;
