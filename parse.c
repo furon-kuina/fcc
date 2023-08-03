@@ -2,10 +2,10 @@
 
 // グローバル変数
 
-Token *token;      // パーサに入力として与えられるトークン列
-LVar *locals;      // ローカル変数を表す連結リスト
-Node *code[100];   // ";"で区切られたコード
-int node_cnt = 0;  // デバッグ用: ノードの数
+Token *token;  // パーサに入力として与えられるトークン列
+LVar *locals;  // ローカル変数を表す連結リスト
+Node *functions[100];  // ";"で区切られたコード
+int node_cnt = 0;      // デバッグ用: ノードの数
 
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
@@ -67,6 +67,29 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
+Node *new_var(Token *tok) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_LVAR;
+  LVar *lvar = find_lvar(tok);
+  if (lvar) {
+    node->offset = lvar->offset;
+  } else {
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = tok->str;
+    lvar->len = tok->len;
+    if (locals) {
+      lvar->offset = locals->offset + 8;
+    } else {
+      lvar->offset = 8;
+    }
+    node->offset = lvar->offset;
+    locals = lvar;
+  }
+  return node;
+}
+
+Node *function();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -80,21 +103,60 @@ Node *unary();
 void program() {
   int i = 0;
   while (!at_eof()) {
-    code[i] = stmt();
+    functions[i] = function();
     i++;
   }
-  code[i] = NULL;
+  functions[i] = NULL;
+}
+
+Node *function() {
+  if (token->kind != TK_IDENT) {
+    error_at(token->str, "Expected identifier");
+  }
+  Node *node = calloc(1, sizeof(Node));
+  node->fname = token->str;
+  node->fname_len = token->len;
+  token = token->next;
+  expect("(");
+  {
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
+    while (!consume(")")) {
+      Node *new = new_var(token);
+      token = token->next;
+      cur->next = new;
+      cur = cur->next;
+      consume(",");
+    }
+    node->args = head.next;
+    node->kind = ND_FUNC;
+  }
+
+  {
+    expect("{");
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
+    while (!consume("}")) {
+      Node *new = stmt();
+      cur->next = new;
+      cur = cur->next;
+    }
+    node->stmts = head.next;
+  }
+
+  return node;
 }
 
 Node *stmt() {
   Node *node;
   if (consume("{")) {
-    Stmt head;
+    Node head;
     head.next = NULL;
-    Stmt *cur = &head;
+    Node *cur = &head;
     while (!consume("}")) {
-      Stmt *new = calloc(1, sizeof(Stmt));
-      new->node = stmt();
+      Node *new = stmt();
       cur->next = new;
       cur = cur->next;
     }
@@ -247,14 +309,13 @@ Node *primary() {
     token = token->next;
     if (consume("(")) {
       // 関数名だった場合
-      Arg head;
+      Node head;
       head.next = NULL;
-      Arg *cur = &head;
+      Node *cur = &head;
       while (!consume(")")) {
-        Arg *arg = calloc(1, sizeof(Arg));
-        arg->node = expr();
-        arg->next = NULL;
-        cur->next = arg;
+        Node *new = expr();
+        new->next = NULL;
+        cur->next = new;
         cur = cur->next;
         consume(",");
       }
@@ -293,5 +354,5 @@ Node **parse(Token *tok) {
   fprintf(stderr, "パース開始\n");
   token = tok;
   program();
-  return code;
+  return functions;
 }

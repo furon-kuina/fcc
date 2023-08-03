@@ -9,6 +9,17 @@ void gen_lval(Node *node) {
   printf("  push rax\n");
 }
 
+void gen(Node *node);
+
+void gen_stmts(Node *stmt) {
+  Node *cur = stmt;
+  while (cur) {
+    gen(cur);
+    printf("  pop rax\n");
+    cur = cur->next;
+  }
+}
+
 int xxx = 0;
 
 void gen(Node *node) {
@@ -89,20 +100,15 @@ void gen(Node *node) {
       return;
     }
     case ND_BLOCK: {
-      Stmt *cur = node->stmts;
-      while (cur) {
-        gen(cur->node);
-        printf("  pop rax\n");
-        cur = cur->next;
-      }
+      gen_stmts(node->stmts);
       return;
     }
     case ND_CALL: {
       // よくわかってないのでrspを16の倍数に調整していない
       // 不都合が出るまでは放置
-      Arg *arg = node->args;
-      for (int i = 0; arg != NULL && i < 6; ++i) {
-        gen(arg->node);
+      Node *args = node->args;
+      for (int i = 0; args != NULL && i < 6; ++i) {
+        gen(args);
         if (i == 0) {
           printf("  pop rdi\n");
         } else if (i == 1) {
@@ -116,10 +122,50 @@ void gen(Node *node) {
         } else if (i == 5) {
           printf("  pop r9\n");
         }
-        arg = arg->next;
+        args = args->next;
       }
       printf("  call %.*s\n", node->fname_len, node->fname);
       printf("  push rax\n");
+      return;
+    }
+    case ND_FUNC: {
+      printf("%.*s:\n", node->fname_len, node->fname);
+
+      // prologue
+      printf("  push rbp\n");
+      printf("  mov rbp, rsp\n");
+      printf("  sub rsp, 208\n");
+
+      Node *args = node->args;
+
+      for (int i = 0; args != NULL && i < 6; i++) {
+        gen_lval(args);
+        if (i == 0) {
+          printf("  push rdi\n");
+        } else if (i == 1) {
+          printf("  push rsi\n");
+        } else if (i == 2) {
+          printf("  push rdx\n");
+        } else if (i == 3) {
+          printf("  push rcx\n");
+        } else if (i == 4) {
+          printf("  push r8\n");
+        } else if (i == 5) {
+          printf("  push r9");
+        }
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  mov [rax], rdi\n");
+        args = args->next;
+      }
+      gen_stmts(node->stmts);
+      printf("  pop rax\n");
+
+      // epilogue
+
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
+      printf("  ret\n");
       return;
     }
     default:
@@ -172,21 +218,13 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
-void codegen(Node **code) {
+void codegen(Node **functions) {
   fprintf(stderr, "アセンブリ生成開始\n");
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
-  printf("main:\n");
 
-  // 変数26個分の領域を確保
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
-  for (int i = 0; code[i]; i++) {
-    gen(code[i]);
+  for (int i = 0; functions[i]; i++) {
+    gen(functions[i]);
     printf("  pop rax\n");
   }
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
 }

@@ -37,7 +37,8 @@ void error_at(char *loc, char *fmt, ...);
 bool at_eof();
 Token *tokenize(char *p);
 
-// program    = stmt*
+// program    = function*
+// function   = ident "(" ident? ("," ident)* ")" "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
@@ -73,6 +74,7 @@ typedef enum {
   ND_FOR,     // for
   ND_BLOCK,   // ブロック
   ND_CALL,    // 関数呼び出し
+  ND_FUNC,    // 関数定義
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -104,8 +106,9 @@ struct Node {
   Node *init;     // kind == ND_FORのときのみ
   Node *cond;     // kind == ND_IF, ND_FORのときのみ
   Node *update;   // kind == ND_FORのときのみ
-  Stmt *stmts;    // kind == ND_BLOCKのときのみ
-  Arg *args;      // kind == ND_CALLのときのみ
+  Node *stmts;    // kind == ND_BLOCKのときのみ
+  Node *args;     // kind == ND_CALLのときのみ
+  Node *next;     // kind == ND_FUNC
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ
   char *fname;    // 関数名 kind == ND_CALLのときのみ

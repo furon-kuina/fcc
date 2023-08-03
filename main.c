@@ -59,6 +59,8 @@ char *node_dbg(Node *node) {
       return "block";
     case ND_CALL:
       return "function call";
+    case ND_FUNC:
+      return "function definition";
   }
 }
 
@@ -80,11 +82,11 @@ void print_node(Node *node) {
   }
 }
 
-void print_code(Node **code) {
+void print_functions(Node **functions) {
   int i = 0;
-  while (code[i]) {
+  while (functions[i]) {
     fprintf(stderr, "\n%i番目のコード: ", i);
-    print_node(code[i++]);
+    print_node(functions[i++]);
   }
 }
 
@@ -99,9 +101,9 @@ int main(int argc, char **argv) {
 
   Token *token = tokenize(user_input);
   print_token_list(token);
-  Node **code = parse(token);
-  print_code(code);
-  codegen(code);
+  Node **functions = parse(token);
+  print_functions(functions);
+  codegen(functions);
 
   return 0;
 }
