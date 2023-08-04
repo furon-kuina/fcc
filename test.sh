@@ -18,7 +18,7 @@ assert() {
 }
 
 
-assert 1 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(1);}"
+assert 1 "f(x){{if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}}main(){return f(1);}"
 assert 1 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(2);}"
 assert 2 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(3);}"
 assert 3 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(4);}"
