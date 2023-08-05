@@ -81,7 +81,6 @@ typedef enum {
   ND_FUNC,    // 関数定義
   ND_ADDR,    // アドレス
   ND_DEREF,   // dereference
-  ND_DECL,    // 変数宣言
 } NodeKind;
 
 typedef struct LVar LVar;
@@ -114,7 +113,7 @@ struct Node {
   Node *cond;     // kind == ND_IF, ND_FORのときのみ
   Node *update;   // kind == ND_FORのときのみ
   Node *stmts;    // kind == ND_BLOCKのときのみ
-  Node *args;     // kind == ND_CALLのときのみ
+  Node *args;     // kind == ND_CALL, ND_FUNCのときのみ
   Node *next;     // kind == ND_FUNC
   int val;        // kind == ND_NUMのときのみ
   int offset;     // kind == ND_LVARのときのみ

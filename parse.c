@@ -77,28 +77,24 @@ LVar *find_lvar(Token *tok) {
       return var;
     }
   }
+  error_at(token->str, "Undefined identifier\n");
   return NULL;
 }
 
 Node *new_var(Token *tok) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_LVAR;
-  LVar *lvar = find_lvar(tok);
-  if (lvar) {
-    node->offset = lvar->offset;
+  LVar *lvar = calloc(1, sizeof(LVar));
+  lvar->next = locals;
+  lvar->name = tok->str;
+  lvar->len = tok->len;
+  if (locals) {
+    lvar->offset = locals->offset + 8;
   } else {
-    lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals;
-    lvar->name = tok->str;
-    lvar->len = tok->len;
-    if (locals) {
-      lvar->offset = locals->offset + 8;
-    } else {
-      lvar->offset = 8;
-    }
-    node->offset = lvar->offset;
-    locals = lvar;
+    lvar->offset = 8;
   }
+  node->offset = lvar->offset;
+  locals = lvar;
   return node;
 }
 
@@ -227,6 +223,21 @@ Node *stmt() {
     }
     node->lhs = stmt();
 
+  } else if (consume_token(TK_INT)) {
+    if (token->kind != TK_IDENT) {
+      error_at(token->str, "Expected identifier\n");
+    }
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    LVar *lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = token->str;
+    lvar->len = token->len;
+    lvar->offset = locals ? locals->offset + 8 : 8;
+    node->offset = lvar->offset;
+    locals = lvar;
+    token = token->next;
+    expect(";");
   } else {
     node = expr();
     expect(";");
@@ -316,10 +327,6 @@ Node *unary() {
   return primary();
 }
 
-// primary    = num
-//            | ident ("(" expr? ")")?
-//            | "(" expr ")"
-
 Node *primary() {
   if (consume_str("(")) {
     Node *node = expr();
@@ -354,17 +361,7 @@ Node *primary() {
     node_cnt++;
 
     LVar *lvar = find_lvar(token);
-    if (lvar) {
-      node->offset = lvar->offset;
-    } else {
-      lvar = calloc(1, sizeof(LVar));
-      lvar->next = locals;
-      lvar->name = token->str;
-      lvar->len = token->len;
-      lvar->offset = locals ? locals->offset + 8 : 8;
-      node->offset = lvar->offset;
-      locals = lvar;
-    }
+    node->offset = lvar->offset;
     token = token->next;
     return node;
   }
