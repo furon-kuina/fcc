@@ -18,6 +18,7 @@ typedef enum {
   TK_FOR,       // for
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
+  TK_INT,       // int
 } TokenKind;
 
 typedef struct Token Token;
@@ -38,13 +39,15 @@ bool at_eof();
 Token *tokenize(char *p);
 
 // program    = function*
-// function   = ident "(" ident? ("," ident)* ")" "{" stmt* "}"
+// function   = "int" ident "(" "(int" ident)? ("," "int" ident)* ")"
+//              "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "while" "(" expr ")" stmt
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//            | "int" ident ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -67,7 +70,7 @@ typedef enum {
   ND_EQ,      // ==
   ND_NEQ,     // !=
   ND_NUM,     // 整数
-  ND_ASSIGN,  // =
+  ND_ASSIGN,  // 代入
   ND_LVAR,    // 左辺値
   ND_RETURN,  // return
   ND_WHILE,   // while
@@ -78,6 +81,7 @@ typedef enum {
   ND_FUNC,    // 関数定義
   ND_ADDR,    // アドレス
   ND_DEREF,   // dereference
+  ND_DECL,    // 変数宣言
 } NodeKind;
 
 typedef struct LVar LVar;

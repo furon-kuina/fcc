@@ -123,6 +123,9 @@ void program() {
 }
 
 Node *function() {
+  if (!consume_token(TK_INT)) {
+    error_at(token->str, "Expected int");
+  }
   if (token->kind != TK_IDENT) {
     error_at(token->str, "Expected identifier");
   }
@@ -136,6 +139,9 @@ Node *function() {
     head.next = NULL;
     Node *cur = &head;
     while (!consume_str(")")) {
+      if (!consume_token(TK_INT)) {
+        error_at(token->str, "Expected int");
+      }
       Node *new = new_var(token);
       token = token->next;
       cur->next = new;
