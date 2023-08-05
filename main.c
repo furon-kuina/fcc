@@ -46,7 +46,7 @@ char *node_dbg(Node *node) {
     case ND_LVAR:
       return "LVAR";
     case ND_ASSIGN:
-      return "=";
+      return "assign";
     case ND_RETURN:
       return "return";
     case ND_WHILE:
@@ -65,8 +65,6 @@ char *node_dbg(Node *node) {
       return "address";
     case ND_DEREF:
       return "dereference";
-    case ND_DECL:
-      return "variable declaration";
   }
 }
 
@@ -88,11 +86,25 @@ void print_node(Node *node) {
   }
 }
 
-void print_functions(Node **functions) {
+void print_function(Node *func) {
+  fprintf(stderr, "%.*s\n", func->fname_len, func->fname);
+  fprintf(stderr, "######################################\n");
+  Node *stmt = func->stmts;
+  int stmt_cnt = 1;
+  while (stmt) {
+    fprintf(stderr, "-------------------------------------");
+    fprintf(stderr, "\n%i番目のstatement", stmt_cnt++);
+    print_node(stmt);
+    stmt = stmt->next;
+  }
+}
+
+void print_ast(Node **functions) {
   int i = 0;
   while (functions[i]) {
-    fprintf(stderr, "\n%i番目のコード: ", i);
-    print_node(functions[i++]);
+    fprintf(stderr, "\n%i番目の関数: ", i + 1);
+    print_function(functions[i++]);
+    fprintf(stderr, "######################################\n\n");
   }
 }
 
@@ -108,8 +120,8 @@ int main(int argc, char **argv) {
   Token *token = tokenize(user_input);
   print_token_list(token);
   Node **functions = parse(token);
-  // print_functions(functions);
-  // codegen(functions);
+  print_ast(functions);
+  codegen(functions);
 
   return 0;
 }
