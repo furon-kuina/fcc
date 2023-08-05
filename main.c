@@ -61,6 +61,10 @@ char *node_dbg(Node *node) {
       return "function call";
     case ND_FUNC:
       return "function definition";
+    case ND_ADDR:
+      return "address";
+    case ND_DEREF:
+      return "dereference";
   }
 }
 

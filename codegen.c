@@ -1,5 +1,6 @@
 #include "fcc.h"
 
+// nodeに対応する変数のアドレスをスタックトップにpushする
 void gen_lval(Node *node) {
   if (node->kind != ND_LVAR) {
     error("代入の左辺値が変数ではありません");
@@ -29,6 +30,8 @@ void gen(Node *node) {
       return;
     case ND_LVAR:
       gen_lval(node);
+      // スタックトップにある値をpopし、それをアドレスとみなしたときの
+      // アドレスの値をスタックにpushする
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
       printf("  push rax\n");
@@ -168,6 +171,15 @@ void gen(Node *node) {
       printf("  ret\n");
       return;
     }
+    case ND_ADDR:
+      gen_lval(node->lhs);
+      return;
+    case ND_DEREF:
+      gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  mov rax, [rax]\n");
+      printf("  push rax\n");
+      return;
     default:
       break;
   }

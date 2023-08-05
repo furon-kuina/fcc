@@ -52,6 +52,7 @@ Token *tokenize(char *p);
 // add        = mul ("+" mul | "-" mul)*
 // mul        = primary ("*" primary | "/" primary)*
 // unary      = ( "+" | "-" )? primary
+//            | ("&" | "*") unary
 // primary    = num
 //            | ident ("(" expr? ")")?
 //            | "(" expr ")"
@@ -75,6 +76,8 @@ typedef enum {
   ND_BLOCK,   // ブロック
   ND_CALL,    // 関数呼び出し
   ND_FUNC,    // 関数定義
+  ND_ADDR,    // アドレス
+  ND_DEREF,   // dereference
 } NodeKind;
 
 typedef struct LVar LVar;

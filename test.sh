@@ -17,7 +17,8 @@ assert() {
   fi
 }
 
-
+assert 3 "main(){x=3;y=5;z=&y+8;return *z;}"
+assert 3 "main(){x=3;y=&x;return *y;}"
 assert 1 "f(x){{if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}}main(){return f(1);}"
 assert 1 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(2);}"
 assert 2 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(3);}"

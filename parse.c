@@ -301,6 +301,12 @@ Node *unary() {
   if (consume_str("-")) {
     return new_node(ND_SUB, new_node_num(0), primary());
   }
+  if (consume_str("&")) {
+    return new_node(ND_ADDR, unary(), NULL);
+  }
+  if (consume_str("*")) {
+    return new_node(ND_DEREF, unary(), NULL);
+  }
   return primary();
 }
 
@@ -354,7 +360,6 @@ Node *primary() {
       locals = lvar;
     }
     token = token->next;
-
     return node;
   }
   Node *node = new_node_num(expect_number());
