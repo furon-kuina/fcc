@@ -65,6 +65,8 @@ char *node_dbg(Node *node) {
       return "address";
     case ND_DEREF:
       return "dereference";
+    case ND_DECL:
+      return "variable declaration";
   }
 }
 
@@ -106,8 +108,8 @@ int main(int argc, char **argv) {
   Token *token = tokenize(user_input);
   print_token_list(token);
   Node **functions = parse(token);
-  print_functions(functions);
-  codegen(functions);
+  // print_functions(functions);
+  // codegen(functions);
 
   return 0;
 }

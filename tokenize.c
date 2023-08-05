@@ -1,6 +1,6 @@
 #include "fcc.h"
 
-static char *current_input;
+static char *user_input;
 
 void error(char *fmt, ...) {
   va_list ap;
@@ -14,8 +14,8 @@ void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = loc - current_input;
-  fprintf(stderr, "%s\n", current_input);
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, " ");
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
@@ -57,6 +57,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 
 Token *tokenize(char *p) {
   fprintf(stderr, "トークナイズ開始\n");
+  user_input = p;
   Token head;
   head.next = NULL;
   Token *cur = &head;

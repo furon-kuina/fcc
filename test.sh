@@ -20,7 +20,6 @@ assert() {
 assert 10 "int add(int x, int y){return x+y;}int main(){return add(3,7);}"
 assert 3 "int main() {x=3;y=5;z=&y+8;return *z;}"
 assert 233 "int f(int x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}int main(){return f(13);}"
-# assert 3 "main(){x=3;y=5;z=&y+8;return *z;}"
 # assert 3 "main(){x=3;y=&x;return *y;}"
 # assert 1 "f(x){{if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}}main(){return f(1);}"
 # assert 1 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(2);}"
