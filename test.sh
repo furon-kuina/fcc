@@ -17,8 +17,10 @@ assert() {
   fi
 }
 
-assert 3 'int main(){int x; x=3; return *&x; }'
+assert 4 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 2; return *q;}"
 assert 3 'int main(){int x; x = 3;int *y; y=&x; int **z; z=&y; return **z; }'
+assert 8 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 3; return *q;}"
+assert 3 'int main(){int x; x=3; return *&x; }'
 assert 5 'int main(){int x; x=3;int y; y=&x; *y=5; return x; }'
 
 assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; y = echo(x); return y; }"
@@ -61,7 +63,6 @@ assert 10 "int add(int x, int y){
 int main(){
   return add(3,7);
 }"
-# assert 3 "int main() {x=3;y=5;z=&y+8;return *z;}"
 assert 233 "
 int f(int x) {
   if (x <= 2) {

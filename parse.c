@@ -95,6 +95,7 @@ Node *new_var(Token *tok, Type *ty) {
     lvar->offset = 8;
   }
   node->offset = lvar->offset;
+  node->type = lvar->type;
   locals = lvar;
   return node;
 }
@@ -228,16 +229,7 @@ Node *stmt() {
     if (token->kind != TK_IDENT) {
       error_at(token->str, "Expected identifier\n");
     }
-    node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-    node->type = ty;
-    LVar *lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals;
-    lvar->name = token->str;
-    lvar->len = token->len;
-    lvar->offset = locals ? locals->offset + 8 : 8;
-    node->offset = lvar->offset;
-    locals = lvar;
+    node = new_var(token, ty);
     token = token->next;
     expect(";");
   } else {
@@ -364,6 +356,7 @@ Node *primary() {
 
     LVar *lvar = find_lvar(token);
     node->offset = lvar->offset;
+    node->type = lvar->type;
     token = token->next;
     return node;
   }

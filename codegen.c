@@ -196,6 +196,20 @@ void gen(Node *node) {
 
   switch (node->kind) {
     case ND_ADD:
+      // assuming that at least one of the operands is of int type
+      if (node->lhs->kind == ND_LVAR && node->lhs->type->ty == PTR) {
+        if (node->lhs->type->ptr_to->ty == INT) {
+          printf("  imul rdi, 4\n");
+        } else {
+          printf("  imul rdi, 8\n");
+        }
+      } else if (node->rhs->kind == ND_LVAR && node->rhs->type->ty == PTR) {
+        if (node->rhs->type->ptr_to->ty == INT) {
+          printf("  imul rax, 4\n");
+        } else {
+          printf("  imul rax, 8\n");
+        }
+      }
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:
