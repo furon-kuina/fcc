@@ -17,6 +17,22 @@ assert() {
   fi
 }
 
+assert 3 'int main(){int x; x=3; return *&x; }'
+assert 3 'int main(){int x; x = 3;int *y; y=&x; int **z; z=&y; return **z; }'
+assert 5 'int main(){int x; x=3;int y; y=&x; *y=5; return x; }'
+
+assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; y = echo(x); return y; }"
+
+assert 5 "int main() {
+  int x;
+  int *y;
+  int **z;
+  y = &x;
+  z = &y;
+  **z = 5;
+  return x;
+}"
+
 assert 3 "int main() {
   int x;
   int *y;
