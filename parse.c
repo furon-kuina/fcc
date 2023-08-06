@@ -81,10 +81,11 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
-Node *new_var(Token *tok) {
+Node *new_var(Token *tok, Type *ty) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_LVAR;
   LVar *lvar = calloc(1, sizeof(LVar));
+  lvar->type = ty;
   lvar->next = locals;
   lvar->name = tok->str;
   lvar->len = tok->len;
@@ -108,6 +109,7 @@ Node *equality();
 Node *relational();
 Node *add();
 Node *unary();
+Type *type();
 
 void program() {
   int i = 0;
@@ -119,15 +121,14 @@ void program() {
 }
 
 Node *function() {
-  if (!consume_token(TK_INT)) {
-    error_at(token->str, "Expected int");
-  }
+  Type *ty = type();
   if (token->kind != TK_IDENT) {
     error_at(token->str, "Expected identifier");
   }
   Node *node = calloc(1, sizeof(Node));
   node->fname = token->str;
   node->fname_len = token->len;
+  node->type = ty;
   token = token->next;
   expect("(");
   {
@@ -135,10 +136,9 @@ Node *function() {
     head.next = NULL;
     Node *cur = &head;
     while (!consume_str(")")) {
-      if (!consume_token(TK_INT)) {
-        error_at(token->str, "Expected int");
-      }
-      Node *new = new_var(token);
+      ty = type();
+      Node *new = new_var(token, ty);
+      new->type = ty;
       token = token->next;
       cur->next = new;
       cur = cur->next;
@@ -223,12 +223,14 @@ Node *stmt() {
     }
     node->lhs = stmt();
 
-  } else if (consume_token(TK_INT)) {
+  } else if (token->kind == TK_INT) {
+    Type *ty = type();
     if (token->kind != TK_IDENT) {
       error_at(token->str, "Expected identifier\n");
     }
     node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
+    node->type = ty;
     LVar *lvar = calloc(1, sizeof(LVar));
     lvar->next = locals;
     lvar->name = token->str;
@@ -367,6 +369,24 @@ Node *primary() {
   }
   Node *node = new_node_num(expect_number());
   return node;
+}
+
+Type *type() {
+  if (token->kind != TK_INT) {
+    error_at(token->str, "Expected typename\n");
+  }
+  token = token->next;
+  Type *head = calloc(1, sizeof(Type));
+  head->ty = INT;
+  head->ptr_to = NULL;
+
+  while (consume_str("*")) {
+    Type *new = calloc(1, sizeof(Type));
+    new->ty = PTR;
+    new->ptr_to = head;
+    head = new;
+  }
+  return head;
 }
 
 Node **parse(Token *tok) {

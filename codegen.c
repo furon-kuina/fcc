@@ -37,9 +37,13 @@ void gen(Node *node) {
       printf("  push rax\n");
       return;
     case ND_ASSIGN:
-      gen_lval(node->lhs);
+      if (node->lhs->kind == ND_DEREF) {
+        gen(node->lhs->lhs);
+      } else {
+        gen_lval(node->lhs);
+      }
       gen(node->rhs);
-
+      // ここまでで、右辺の値, 左辺の変数のアドレスがスタックトップにある
       printf("  pop rdi\n");
       printf("  pop rax\n");
       printf("  mov [rax], rdi\n");

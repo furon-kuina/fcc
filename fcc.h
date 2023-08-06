@@ -39,7 +39,7 @@ bool at_eof();
 Token *tokenize(char *p);
 
 // program    = function*
-// function   = "int" ident "(" "(int" ident)? ("," "int" ident)* ")"
+// function   = type ident "(" (type ident)? ("," "type ident)* ")"
 //              "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
@@ -47,7 +47,7 @@ Token *tokenize(char *p);
 //            | "while" "(" expr ")" stmt
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-//            | "int" ident ";"
+//            | type ident ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -59,6 +59,7 @@ Token *tokenize(char *p);
 // primary    = num
 //            | ident ("(" expr? ")")?
 //            | "(" expr ")"
+// type       = "int" "*"*
 
 typedef enum {
   ND_ADD,     // +
@@ -83,42 +84,38 @@ typedef enum {
   ND_DEREF,   // dereference
 } NodeKind;
 
+typedef struct Type Type;
+struct Type {
+  enum { INT, PTR } ty;
+  struct Type *ptr_to;
+};
+
 typedef struct LVar LVar;
 struct LVar {
   LVar *next;
   char *name;
+  Type *type;
   int len;
   int offset;
 };
 
 typedef struct Node Node;
 
-typedef struct Stmt Stmt;
-struct Stmt {
-  Stmt *next;
-  Node *node;
-};
-
-typedef struct Arg Arg;
-struct Arg {
-  Arg *next;
-  Node *node;
-};
-
 struct Node {
   NodeKind kind;  // ノードの種類
   Node *lhs;      // 左オペランド
   Node *rhs;      // 右オペランド
-  Node *init;     // kind == ND_FORのときのみ
-  Node *cond;     // kind == ND_IF, ND_FORのときのみ
-  Node *update;   // kind == ND_FORのときのみ
-  Node *stmts;    // kind == ND_BLOCKのときのみ
-  Node *args;     // kind == ND_CALL, ND_FUNCのときのみ
+  Node *init;     // kind == ND_FOR
+  Node *cond;     // kind == ND_IF, ND_FOR
+  Node *update;   // kind == ND_FOR
+  Node *stmts;    // kind == ND_BLOCK
+  Node *args;     // kind == ND_CALL, ND_FUNC
   Node *next;     // kind == ND_FUNC
-  int val;        // kind == ND_NUMのときのみ
-  int offset;     // kind == ND_LVARのときのみ
-  char *fname;    // 関数名 kind == ND_CALLのときのみ
-  int fname_len;  // 関数名 kind == ND_CALLのときのみ
+  Type *type;     // kind == ND_FUNC, ND_LVAR
+  int val;        // kind == ND_NUM
+  int offset;     // kind == ND_LVAR
+  char *fname;    // 関数名 kind == ND_CALL
+  int fname_len;  // 関数名 kind == ND_CALL
   int id;         // デバッグ用
 };
 
