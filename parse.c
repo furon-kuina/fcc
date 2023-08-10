@@ -46,7 +46,7 @@ void expect(char *op) {
 }
 
 int expect_number() {
-  if (token->kind != TK_NUM) error_at(token->str, "数ではありません");
+  if (token->kind != TK_NUM) error_at(token->str, "Expected number");
   int val = token->val;
   token = token->next;
   return val;
@@ -67,6 +67,9 @@ Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
   node->val = val;
+  node->type = calloc(1, sizeof(Type));
+  node->type->ty = INT;
+  node->type->ptr_to = NULL;
   node->id = node_cnt++;
   return node;
 }
@@ -98,6 +101,20 @@ Node *new_var(Token *tok, Type *ty) {
   node->type = lvar->type;
   locals = lvar;
   return node;
+}
+
+Type *pointer_to(Type *ty) {
+  Type *res = calloc(1, sizeof(Type));
+  res->ptr_to = ty;
+  res->ty = PTR;
+  return res;
+}
+
+Type *base_type_of(Type *type) {
+  if (type->ptr_to == NULL) {
+    error_at(token->str, "Expected pointer type");
+  }
+  return type->ptr_to;
 }
 
 Node *function();
@@ -313,10 +330,25 @@ Node *unary() {
     return new_node(ND_SUB, new_node_num(0), primary());
   }
   if (consume_str("&")) {
-    return new_node(ND_ADDR, unary(), NULL);
+    Node *operand = unary();
+    Node *node = new_node(ND_ADDR, operand, NULL);
+    node->type = pointer_to(operand->type);
+    return node;
   }
   if (consume_str("*")) {
-    return new_node(ND_DEREF, unary(), NULL);
+    Node *operand = unary();
+    Node *node = new_node(ND_DEREF, operand, NULL);
+    node->type = base_type_of(operand->type);
+    return node;
+  }
+  if (consume_token(TK_SIZEOF)) {
+    Node *node = unary();
+    if (node->type->ty == INT) {
+      return new_node_num(4);
+    }
+    if (node->type->ty == PTR) {
+      return new_node_num(8);
+    }
   }
   return primary();
 }
@@ -345,6 +377,11 @@ Node *primary() {
       }
       node->args = head.next;
       node->kind = ND_CALL;
+      node->type = calloc(1, sizeof(Type));
+      // assuming that the function return type is int
+      // TODO: attach the appropriate type
+      node->type->ty = INT;
+      node->type->ptr_to = NULL;
       node->fname = tmp->str;
       node->fname_len = tmp->len;
       return node;

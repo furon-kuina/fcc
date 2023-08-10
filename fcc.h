@@ -19,6 +19,7 @@ typedef enum {
   TK_NUM,       // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
   TK_INT,       // int
+  TK_SIZEOF,    // sizeof
 } TokenKind;
 
 typedef struct Token Token;
@@ -56,6 +57,7 @@ Token *tokenize(char *p);
 // mul        = primary ("*" primary | "/" primary)*
 // unary      = ( "+" | "-" )? primary
 //            | ("&" | "*") unary
+//            | "sizeof" unary
 // primary    = num
 //            | ident ("(" expr? ")")?
 //            | "(" expr ")"
