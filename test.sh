@@ -17,6 +17,8 @@ assert() {
   fi
 }
 
+assert 8 "int main(){int *x; return sizeof(x + 8);}"
+assert 4 "int main(){int x; return sizeof(sizeof x);}"
 assert 8 "int main(){int x; x = 3; int *y; y = &x; int **z; z = &y; return sizeof(z);}"
 assert 8 "int main(){int x; x = 3; int *y; y = &x; return sizeof(y);}"
 assert 4 "int main(){int x; return sizeof x;}"

@@ -10,7 +10,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 2; return *q;}"],
+        "args": ["int main(){int *x; return sizeof(x + 8);}"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],

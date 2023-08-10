@@ -298,11 +298,26 @@ Node *relational() {
 
 Node *add() {
   Node *node = mul();
+  bool is_add_or_sub = false;
   for (;;) {
     if (consume_str("+")) {
+      is_add_or_sub = true;
       node = new_node(ND_ADD, node, mul());
     } else if (consume_str("-")) {
+      is_add_or_sub = true;
       node = new_node(ND_SUB, node, mul());
+    } else if (is_add_or_sub) {
+      node->type = calloc(1, sizeof(Type));
+      if (node->lhs->type->ty == PTR) {
+        node->type->ty = PTR;
+        node->type->ptr_to = node->lhs->type->ptr_to;
+      } else if (node->rhs->type->ty == PTR) {
+        node->type->ty = PTR;
+        node->type->ptr_to = node->rhs->type->ptr_to;
+      } else {
+        node->type->ty = INT;
+      }
+      return node;
     } else {
       return node;
     }
