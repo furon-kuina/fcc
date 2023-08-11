@@ -5,7 +5,10 @@
 Token *token;  // パーサに入力として与えられるトークン列
 LVar *locals;  // ローカル変数を表す連結リスト
 Node *functions[100];  // ";"で区切られたコード
-int node_cnt = 0;      // デバッグ用: ノードの数
+
+int sf_size;
+
+int node_cnt = 0;  // デバッグ用: ノードの数
 
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
@@ -84,6 +87,14 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
+size_t allocation_size(Type *ty) {
+  if (ty->ty == ARRAY) {
+    return 8 * ty->array_size;
+  } else {
+    return 8;
+  }
+}
+
 Node *new_var(Token *tok, Type *ty) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_LVAR;
@@ -93,19 +104,20 @@ Node *new_var(Token *tok, Type *ty) {
   lvar->name = tok->str;
   lvar->len = tok->len;
   if (locals) {
-    lvar->offset = locals->offset + 8;
+    lvar->offset = locals->offset + allocation_size(ty);
   } else {
-    lvar->offset = 8;
+    lvar->offset = allocation_size(ty);
   }
   node->offset = lvar->offset;
   node->type = lvar->type;
   locals = lvar;
+  sf_size += allocation_size(ty);
   return node;
 }
 
-Type *pointer_to(Type *ty) {
+Type *pointer_to(Type *type) {
   Type *res = calloc(1, sizeof(Type));
-  res->ptr_to = ty;
+  res->ptr_to = type;
   res->ty = PTR;
   return res;
 }
@@ -115,6 +127,26 @@ Type *base_type_of(Type *type) {
     error_at(token->str, "Expected pointer type");
   }
   return type->ptr_to;
+}
+
+Type *array_of(Type *ty, size_t size) {
+  Type *res = calloc(1, sizeof(Type));
+  res->ty = ARRAY;
+  res->ptr_to = ty;
+  res->array_size = size;
+  return res;
+}
+
+size_t size_of(Type *type) {
+  if (type->ty == INT) {
+    return 4;
+  }
+  if (type->ty == PTR) {
+    return 8;
+  }
+  if (type->ty == ARRAY) {
+    return size_of(type->ptr_to);
+  }
 }
 
 Node *function();
@@ -178,7 +210,9 @@ Node *function() {
     }
     node->stmts = head.next;
   }
-
+  node->sf_size = sf_size;
+  sf_size = 0;
+  locals = NULL;
   return node;
 }
 
@@ -246,8 +280,14 @@ Node *stmt() {
     if (token->kind != TK_IDENT) {
       error_at(token->str, "Expected identifier\n");
     }
-    node = new_var(token, ty);
+    Token *identifier = token;
     token = token->next;
+    if (consume_str("[")) {
+      node = new_var(identifier, array_of(ty, token->val));
+      expect("]");
+    } else {
+      node = new_var(identifier, ty);
+    }
     expect(";");
   } else {
     node = expr();
@@ -358,12 +398,7 @@ Node *unary() {
   }
   if (consume_token(TK_SIZEOF)) {
     Node *node = unary();
-    if (node->type->ty == INT) {
-      return new_node_num(4);
-    }
-    if (node->type->ty == PTR) {
-      return new_node_num(8);
-    }
+    return new_node_num(size_of(node->type));
   }
   return primary();
 }

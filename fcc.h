@@ -88,8 +88,9 @@ typedef enum {
 
 typedef struct Type Type;
 struct Type {
-  enum { INT, PTR } ty;
+  enum { INT, PTR, ARRAY } ty;
   struct Type *ptr_to;
+  size_t array_size;
 };
 
 typedef struct LVar LVar;
@@ -116,6 +117,7 @@ struct Node {
   Type *type;     // kind == ND_FUNC, ND_LVAR
   int val;        // kind == ND_NUM
   int offset;     // kind == ND_LVAR
+  int sf_size;    // kind == ND_FUNC
   char *fname;    // 関数名 kind == ND_CALL
   int fname_len;  // 関数名 kind == ND_CALL
   int id;         // デバッグ用

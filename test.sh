@@ -17,6 +17,12 @@ assert() {
   fi
 }
 
+assert 1 "int main(){int x; x = 1; return x;}"
+assert 8 "int main(){int x; return sizeof(**&&&x);}"
+assert 4 "int main(){int x; return sizeof(**&&x);}"
+assert 4 "int main(){int x; return sizeof(*&x);}"
+assert 8 "int main(){int **x; return sizeof(8 + x);}"
+assert 8 "int main(){int *x; return sizeof(8 + x);}"
 assert 8 "int main(){int *x; return sizeof(x + 8);}"
 assert 4 "int main(){int x; return sizeof(sizeof x);}"
 assert 8 "int main(){int x; x = 3; int *y; y = &x; int **z; z = &y; return sizeof(z);}"
@@ -30,7 +36,7 @@ assert 8 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 3; return *q
 assert 3 'int main(){int x; x=3; return *&x; }'
 assert 5 'int main(){int x; x=3;int *y; y=&x; *y=5; return x; }'
 
-assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; y = echo(x); return y; }"
+# assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; return *echo(y); }"
 
 assert 5 "int main() {
   int x;

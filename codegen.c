@@ -29,6 +29,7 @@ void gen(Node *node) {
       printf("  push %d\n", node->val);
       return;
     case ND_LVAR:
+      // nodeに対応する変数のアドレスをスタックトップにpushする
       gen_lval(node);
       // スタックトップにある値をpopし、それをアドレスとみなしたときの
       // アドレスの値をスタックにpushする
@@ -141,7 +142,7 @@ void gen(Node *node) {
       // prologue
       printf("  push rbp\n");
       printf("  mov rbp, rsp\n");
-      printf("  sub rsp, 208\n");
+      printf("  sub rsp, %i\n", node->sf_size);
 
       Node *args = node->args;
 
