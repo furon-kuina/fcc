@@ -23,19 +23,81 @@ void gen_stmts(Node *stmt) {
 
 int xxx = 0;
 
+char *node_kind_str(NodeKind kind) {
+  switch (kind) {
+    case ND_ADD:
+      return "ND_ADD";
+    case ND_SUB:
+      return "ND_SUB";
+    case ND_MUL:
+      return "ND_MUL";
+    case ND_DIV:
+      return "ND_DIV";
+    case ND_LT:
+      return "ND_LT";
+    case ND_LE:
+      return "ND_LE";
+    case ND_EQ:
+      return "ND_EQ";
+    case ND_NEQ:
+      return "ND_NEQ";
+    case ND_NUM:
+      return "ND_NUM";
+    case ND_ASSIGN:
+      return "ND_ASSIGN";
+    case ND_LVAR:
+      return "ND_LVAR";
+    case ND_RETURN:
+      return "ND_RETURN";
+    case ND_WHILE:
+      return "ND_WHILE";
+    case ND_IF:
+      return "ND_IF";
+    case ND_FOR:
+      return "ND_FOR";
+    case ND_BLOCK:
+      return "ND_BLOCK";
+    case ND_CALL:
+      return "ND_CALL";
+    case ND_FUNC:
+      return "ND_FUNC";
+    case ND_ADDR:
+      return "ND_ADDR";
+    case ND_DEREF:
+      return "ND_DEREF";
+  }
+}
+
+void print_gen_start(Node *node) {
+  printf("# start generating node #%i of kind %s\n", node->id,
+         node_kind_str(node->kind));
+}
+
+void print_gen_end(Node *node) {
+  printf("# finish generating node #%i of kind %s\n", node->id,
+         node_kind_str(node->kind));
+}
+
 void gen(Node *node) {
+  print_gen_start(node);
   switch (node->kind) {
     case ND_NUM:
       printf("  push %d\n", node->val);
+      print_gen_end(node);
       return;
     case ND_LVAR:
+      printf("# at the end of this, the current value of the lvar\n");
+      printf("# will be pushed on top of the stack\n");
       // nodeに対応する変数のアドレスをスタックトップにpushする
       gen_lval(node);
       // スタックトップにある値をpopし、それをアドレスとみなしたときの
       // アドレスの値をスタックにpushする
-      printf("  pop rax\n");
-      printf("  mov rax, [rax]\n");
-      printf("  push rax\n");
+      if (node->type->ty != ARRAY) {
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+      }
+      print_gen_end(node);
       return;
     case ND_ASSIGN:
       if (node->lhs->kind == ND_DEREF) {
@@ -49,6 +111,7 @@ void gen(Node *node) {
       printf("  pop rax\n");
       printf("  mov [rax], rdi\n");
       printf("  push rdi\n");
+      print_gen_end(node);
       return;
     case ND_RETURN:
       gen(node->lhs);
@@ -56,6 +119,7 @@ void gen(Node *node) {
       printf("  mov rsp, rbp\n");
       printf("  pop rbp\n");
       printf("  ret\n");
+      print_gen_end(node);
       return;
     case ND_WHILE: {
       int id = xxx;
@@ -68,6 +132,7 @@ void gen(Node *node) {
       gen(node->rhs);
       printf("  jmp .Lbegin%i\n", id);
       printf(".Lend%i:\n", id);
+      print_gen_end(node);
       return;
     }
     case ND_IF: {
@@ -84,6 +149,7 @@ void gen(Node *node) {
         gen(node->rhs);
       }
       printf(".Lend%i:\n", id);
+      print_gen_end(node);
       return;
     }
     case ND_FOR: {
@@ -105,15 +171,18 @@ void gen(Node *node) {
       }
       printf("  jmp .Lbegin%i\n", id);
       printf(".Lend%i:\n", id);
+      print_gen_end(node);
       return;
     }
     case ND_BLOCK: {
       gen_stmts(node->stmts);
+      print_gen_end(node);
       return;
     }
     case ND_CALL: {
       // よくわかってないのでrspを16の倍数に調整していない
       // 不都合が出るまでは放置
+      // TODO: align to 16
       Node *args = node->args;
       for (int i = 0; args != NULL && i < 6; ++i) {
         gen(args);
@@ -134,6 +203,7 @@ void gen(Node *node) {
       }
       printf("  call %.*s\n", node->fname_len, node->fname);
       printf("  push rax\n");
+      print_gen_end(node);
       return;
     }
     case ND_FUNC: {
@@ -174,16 +244,19 @@ void gen(Node *node) {
       printf("  mov rsp, rbp\n");
       printf("  pop rbp\n");
       printf("  ret\n");
+      print_gen_end(node);
       return;
     }
     case ND_ADDR:
       gen_lval(node->lhs);
+      print_gen_end(node);
       return;
     case ND_DEREF:
       gen(node->lhs);
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
       printf("  push rax\n");
+      print_gen_end(node);
       return;
     default:
       break;
@@ -198,13 +271,13 @@ void gen(Node *node) {
   switch (node->kind) {
     case ND_ADD:
       // assuming that at least one of the operands is of int type
-      if (node->lhs->kind == ND_LVAR && node->lhs->type->ty == PTR) {
+      if (node->lhs->kind == ND_LVAR && node->lhs->type->ty != INT) {
         if (node->lhs->type->ptr_to->ty == INT) {
           printf("  imul rdi, 4\n");
         } else {
           printf("  imul rdi, 8\n");
         }
-      } else if (node->rhs->kind == ND_LVAR && node->rhs->type->ty == PTR) {
+      } else if (node->rhs->kind == ND_LVAR && node->rhs->type->ty != INT) {
         if (node->rhs->type->ptr_to->ty == INT) {
           printf("  imul rax, 4\n");
         } else {
@@ -247,6 +320,7 @@ void gen(Node *node) {
       break;
   }
   printf("  push rax\n");
+  print_gen_end(node);
 }
 
 void codegen(Node **functions) {

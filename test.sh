@@ -17,6 +17,11 @@ assert() {
   fi
 }
 
+assert 2 "int main() {int x; int *y; y = &x; *y = 2; return x;}"
+assert 1 "int main() {int a[1]; *a = 1; int *p; p = a; return *p;}"
+assert 2 "int main() {int a[2];*(a + 1) = 2;int *p; p = a; return *(a + 1);}"
+assert 3 "int main() {int a[2]; *a = 1; *(a + 1) = 2;int *p; p = a; return *p + *(p + 1);}"
+
 assert 1 "int main(){int x; x = 1; return x;}"
 assert 8 "int main(){int x; return sizeof(**&&&x);}"
 assert 4 "int main(){int x; return sizeof(**&&x);}"

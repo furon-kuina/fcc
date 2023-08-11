@@ -102,6 +102,14 @@ struct LVar {
   int offset;
 };
 
+typedef struct Func Func;
+struct Func {
+  Type *return_type;
+  char *name;
+  int len;
+  Func *next;
+};
+
 typedef struct Node Node;
 
 struct Node {

@@ -10,7 +10,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; y = echo(x); return y; }"],
+        "args": ["int main() {int a[1];*a = 1;return sizeof(a);}"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],

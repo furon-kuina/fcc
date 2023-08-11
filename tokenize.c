@@ -11,6 +11,7 @@ void error(char *fmt, ...) {
 }
 
 void error_at(char *loc, char *fmt, ...) {
+  // TODO: support multiple-line input
   va_list ap;
   va_start(ap, fmt);
 
@@ -78,7 +79,8 @@ Token *tokenize(char *p) {
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
         *p == ')' || *p == '>' || *p == '<' || *p == ';' || *p == '=' ||
-        *p == '{' || *p == '}' || *p == ',' || *p == '*' || *p == '&') {
+        *p == '{' || *p == '}' || *p == ',' || *p == '*' || *p == '&' ||
+        *p == '[' || *p == ']') {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }

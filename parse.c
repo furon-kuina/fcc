@@ -4,11 +4,12 @@
 
 Token *token;  // パーサに入力として与えられるトークン列
 LVar *locals;  // ローカル変数を表す連結リスト
+Func *funcs;   // 関数を表す連結リスト
 Node *functions[100];  // ";"で区切られたコード
 
 int sf_size;
 
-int node_cnt = 0;  // デバッグ用: ノードの数
+int node_cnt = 1;  // デバッグ用: ノードの数
 
 // 次のトークンがopの場合は読み進めてtrueを返す
 // そうでない場合はfalseを返す
@@ -44,7 +45,7 @@ bool expect_ident() {
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
-    error_at(token->str, "'%C'ではありません", op);
+    error_at(token->str, "Expected \"%s\"", op);
   token = token->next;
 }
 
@@ -56,6 +57,34 @@ int expect_number() {
 }
 
 bool at_eof() { return token->kind == TK_EOF; }
+
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+      return var;
+    }
+  }
+  error_at(token->str, "Undefined identifier\n");
+  return NULL;
+}
+
+Func *find_func(Token *tok) {
+  for (Func *f = funcs; f; f = f->next) {
+    if (f->len == tok->len && !memcmp(tok->str, f->name, f->len)) {
+      return f;
+    }
+  }
+  error_at(token->str, "Undeclared function\n");
+  return NULL;
+}
+
+size_t allocation_size(Type *ty) {
+  if (ty->ty == ARRAY) {
+    return 8 * ty->array_size;
+  } else {
+    return 8;
+  }
+}
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
@@ -77,25 +106,7 @@ Node *new_node_num(int val) {
   return node;
 }
 
-LVar *find_lvar(Token *tok) {
-  for (LVar *var = locals; var; var = var->next) {
-    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-      return var;
-    }
-  }
-  error_at(token->str, "Undefined identifier\n");
-  return NULL;
-}
-
-size_t allocation_size(Type *ty) {
-  if (ty->ty == ARRAY) {
-    return 8 * ty->array_size;
-  } else {
-    return 8;
-  }
-}
-
-Node *new_var(Token *tok, Type *ty) {
+Node *new_node_var(Token *tok, Type *ty) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_LVAR;
   LVar *lvar = calloc(1, sizeof(LVar));
@@ -110,6 +121,7 @@ Node *new_var(Token *tok, Type *ty) {
   }
   node->offset = lvar->offset;
   node->type = lvar->type;
+  node->id = node_cnt++;
   locals = lvar;
   sf_size += allocation_size(ty);
   return node;
@@ -145,7 +157,7 @@ size_t size_of(Type *type) {
     return 8;
   }
   if (type->ty == ARRAY) {
-    return size_of(type->ptr_to);
+    return size_of(type->ptr_to) * type->array_size;
   }
 }
 
@@ -171,11 +183,18 @@ void program() {
 }
 
 Node *function() {
+  Func *func = calloc(1, sizeof(Func));
   Type *ty = type();
+  func->return_type = ty;
+  func->name = token->str;
+  func->len = token->len;
+  func->next = funcs;
+  funcs = func;
   if (token->kind != TK_IDENT) {
     error_at(token->str, "Expected identifier");
   }
   Node *node = calloc(1, sizeof(Node));
+  node->id = node_cnt++;
   node->fname = token->str;
   node->fname_len = token->len;
   node->type = ty;
@@ -187,11 +206,12 @@ Node *function() {
     Node *cur = &head;
     while (!consume_str(")")) {
       ty = type();
-      Node *new = new_var(token, ty);
+      Node *new = new_node_var(token, ty);
       new->type = ty;
       token = token->next;
       cur->next = new;
       cur = cur->next;
+
       consume_str(",");
     }
     node->args = head.next;
@@ -283,10 +303,14 @@ Node *stmt() {
     Token *identifier = token;
     token = token->next;
     if (consume_str("[")) {
-      node = new_var(identifier, array_of(ty, token->val));
+      if (token->kind != TK_NUM) {
+        expect_number();
+      }
+      node = new_node_var(identifier, array_of(ty, token->val));
+      token = token->next;
       expect("]");
     } else {
-      node = new_var(identifier, ty);
+      node = new_node_var(identifier, ty);
     }
     expect(";");
   } else {
@@ -348,10 +372,10 @@ Node *add() {
       node = new_node(ND_SUB, node, mul());
     } else if (is_add_or_sub) {
       node->type = calloc(1, sizeof(Type));
-      if (node->lhs->type->ty == PTR) {
+      if (node->lhs->type->ty == PTR || node->lhs->type->ty == ARRAY) {
         node->type->ty = PTR;
         node->type->ptr_to = node->lhs->type->ptr_to;
-      } else if (node->rhs->type->ty == PTR) {
+      } else if (node->rhs->type->ty == PTR || node->rhs->type->ty == ARRAY) {
         node->type->ty = PTR;
         node->type->ptr_to = node->rhs->type->ptr_to;
       } else {
@@ -411,7 +435,7 @@ Node *primary() {
   }
   if (token->kind == TK_IDENT) {
     Node *node = calloc(1, sizeof(Node));
-    Token *tmp = token;
+    Token *ident = token;
     token = token->next;
     if (consume_str("(")) {
       // 関数名だった場合
@@ -430,16 +454,16 @@ Node *primary() {
       node->type = calloc(1, sizeof(Type));
       // assuming that the function return type is int
       // TODO: attach the appropriate type
-      node->type->ty = INT;
       node->type->ptr_to = NULL;
-      node->fname = tmp->str;
-      node->fname_len = tmp->len;
+      node->type->ty = INT;
+      node->fname = ident->str;
+      node->fname_len = ident->len;
       return node;
     }
-    token = tmp;
+    token = ident;
 
     node->kind = ND_LVAR;
-    node_cnt++;
+    node->id = node_cnt++;
 
     LVar *lvar = find_lvar(token);
     node->offset = lvar->offset;
