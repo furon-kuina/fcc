@@ -17,6 +17,10 @@ assert() {
   fi
 }
 
+assert 3 "int main() {int x; int *a[3]; a[2] = &x; *a[2] = 3; return x;}"
+assert 1 "int main() { int a[1]; a[0] = 1; return a[0]; }"
+assert 3 "int main() {int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1];}"
+
 assert 2 "int main() {int x; int *y; y = &x; *y = 2; return x;}"
 assert 1 "int main() {int a[1]; *a = 1; int *p; p = a; return *p;}"
 assert 2 "int main() {int a[2];*(a + 1) = 2;int *p; p = a; return *(a + 1);}"

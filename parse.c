@@ -161,6 +161,26 @@ size_t size_of(Type *type) {
   }
 }
 
+Type *add_type(Node *node) {
+  switch (node->kind) {
+    case ND_ADD:
+    case ND_SUB:
+    case ND_MUL:
+    case ND_DIV:
+    case ND_LT:
+    case ND_LE:
+    case ND_EQ:
+    case ND_NEQ:
+    case ND_NUM:
+    case ND_ASSIGN:
+    case ND_LVAR:
+    case ND_ADDR:
+      return pointer_to(node->type);
+    case ND_DEREF:
+      return base_type_of(node->type);
+  }
+}
+
 Node *function();
 Node *stmt();
 Node *expr();
@@ -437,6 +457,23 @@ Node *primary() {
     Node *node = calloc(1, sizeof(Node));
     Token *ident = token;
     token = token->next;
+
+    if (consume_str("[")) {
+      Node *num_node = new_node_num(expect_number());
+      Node *ptr_node = calloc(1, sizeof(Node));
+      ptr_node->kind = ND_LVAR;
+      LVar *lvar = find_lvar(ident);
+      ptr_node->id = node_cnt++;
+      ptr_node->offset = lvar->offset;
+      ptr_node->type = lvar->type;
+      Node *add_node = new_node(ND_ADD, ptr_node, num_node);
+      add_node->type = ptr_node->type;
+      node = new_node(ND_DEREF, add_node, NULL);
+      node->type = base_type_of(ptr_node->type);
+      expect("]");
+      return node;
+    }
+
     if (consume_str("(")) {
       // 関数名だった場合
       Node head;
@@ -460,11 +497,10 @@ Node *primary() {
       node->fname_len = ident->len;
       return node;
     }
+    // 変数名だった場合
     token = ident;
-
     node->kind = ND_LVAR;
     node->id = node_cnt++;
-
     LVar *lvar = find_lvar(token);
     node->offset = lvar->offset;
     node->type = lvar->type;

@@ -60,8 +60,9 @@ Token *tokenize(char *p);
 //            | "sizeof" unary
 // primary    = num
 //            | ident ("(" expr? ")")?
+//            | ident "[" expr? "]"
 //            | "(" expr ")"
-// type       = "int" "*"*
+// type       = "int" "*"* ("[" num "]")?
 
 typedef enum {
   ND_ADD,     // +
