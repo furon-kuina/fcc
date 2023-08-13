@@ -106,14 +106,14 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_var(Token *tok, Type *ty) {
+Node *new_node_var(Token *ident, Type *ty) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_LVAR;
   LVar *lvar = calloc(1, sizeof(LVar));
   lvar->type = ty;
   lvar->next = locals;
-  lvar->name = tok->str;
-  lvar->len = tok->len;
+  lvar->name = ident->str;
+  lvar->len = ident->len;
   if (locals) {
     lvar->offset = locals->offset + allocation_size(ty);
   } else {
@@ -161,25 +161,26 @@ size_t size_of(Type *type) {
   }
 }
 
-Type *add_type(Node *node) {
-  switch (node->kind) {
-    case ND_ADD:
-    case ND_SUB:
-    case ND_MUL:
-    case ND_DIV:
-    case ND_LT:
-    case ND_LE:
-    case ND_EQ:
-    case ND_NEQ:
-    case ND_NUM:
-    case ND_ASSIGN:
-    case ND_LVAR:
-    case ND_ADDR:
-      return pointer_to(node->type);
-    case ND_DEREF:
-      return base_type_of(node->type);
-  }
-}
+// Type *add_type(Node *node) {
+//   switch (node->kind) {
+//     case ND_ADD:
+//     case ND_SUB:
+//     case ND_MUL:
+//     case ND_DIV:
+//     case ND_LT:
+//     case ND_LE:
+//     case ND_EQ:
+//     case ND_NEQ:
+//     case ND_NUM:
+//     return case ND_ASSIGN:
+//       return node->rhs->type;
+//     case ND_LVAR:
+//     case ND_ADDR:
+//       return pointer_to(node->type);
+//     case ND_DEREF:
+//       return base_type_of(node->type);
+//   }
+// }
 
 Node *function();
 Node *stmt();
@@ -202,58 +203,61 @@ void program() {
   functions[i] = NULL;
 }
 
-Node *function() {
+void register_new_func(Token *ident, Type *type) {
   Func *func = calloc(1, sizeof(Func));
-  Type *ty = type();
-  func->return_type = ty;
-  func->name = token->str;
-  func->len = token->len;
+  func->return_type = type;
+  func->name = ident->str;
+  func->len = ident->len;
   func->next = funcs;
   funcs = func;
-  if (token->kind != TK_IDENT) {
-    error_at(token->str, "Expected identifier");
-  }
-  Node *node = calloc(1, sizeof(Node));
-  node->id = node_cnt++;
-  node->fname = token->str;
-  node->fname_len = token->len;
-  node->type = ty;
-  token = token->next;
+}
+
+// reads "(" type ident ("," type ident)* ")" | "(" ")"
+Node *func_arg_list() {
   expect("(");
-  {
-    Node head;
-    head.next = NULL;
-    Node *cur = &head;
-    while (!consume_str(")")) {
-      ty = type();
-      Node *new = new_node_var(token, ty);
-      new->type = ty;
-      token = token->next;
-      cur->next = new;
-      cur = cur->next;
+  Node args_head;
+  args_head.next = NULL;
+  Node *cur = &args_head;
+  while (!consume_str(")")) {
+    Type *ty = type();
+    Node *new = new_node_var(token, ty);
+    new->type = ty;
+    token = token->next;
+    cur->next = new;
+    cur = cur->next;
 
-      consume_str(",");
-    }
-    node->args = head.next;
-    node->kind = ND_FUNC;
+    consume_str(",");
   }
+  return args_head.next;
+}
 
-  {
-    expect("{");
-    Node head;
-    head.next = NULL;
-    Node *cur = &head;
-    while (!consume_str("}")) {
-      Node *new = stmt();
-      cur->next = new;
-      cur = cur->next;
-    }
-    node->stmts = head.next;
-  }
+Node *new_node_func(Token *ident, Type *ty, Node *args, Node *stmts) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_FUNC;
+  node->id = node_cnt++;
+  node->fname = ident->str;
+  node->fname_len = ident->len;
+  node->type = ty;
+  node->args = args;
+  node->stmts = stmts;
   node->sf_size = sf_size;
   sf_size = 0;
   locals = NULL;
   return node;
+}
+
+Node *function() {
+  Type *ty = type();
+  if (token->kind != TK_IDENT) {
+    error_at(token->str, "Expected identifier");
+  }
+  Token *ident = token;
+  register_new_func(ident, ty);
+
+  token = token->next;
+  Node *args = func_arg_list();
+  Node *stmts = stmt();
+  return new_node_func(ident, ty, args, stmts);
 }
 
 Node *stmt() {
@@ -459,6 +463,8 @@ Node *primary() {
     token = token->next;
 
     if (consume_str("[")) {
+      // TODO: support array element access in
+      // a format like 3[a]
       Node *num_node = new_node_num(expect_number());
       Node *ptr_node = calloc(1, sizeof(Node));
       ptr_node->kind = ND_LVAR;

@@ -60,7 +60,8 @@ Token *tokenize(char *p);
 //            | "sizeof" unary
 // primary    = num
 //            | ident ("(" expr? ")")?
-//            | ident "[" expr? "]"
+//            | ident "[" expr "]"
+//            | expr "[" ident "]"
 //            | "(" expr ")"
 // type       = "int" "*"* ("[" num "]")?
 
