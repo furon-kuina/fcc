@@ -10,7 +10,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/fcc",
-        "args": ["int main() {int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1];}"],
+        "args": ["int x;int f() {x = 3;return x;}int y;int main() {y = 4;return x + y + f();}"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],

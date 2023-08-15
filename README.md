@@ -170,4 +170,42 @@ int main() {
 `new_node`が勝手に型をつけるようにしたい。
 
 ### 2023/08/13
-C言語って関数の引数の評価順序は定められていないのか……。
+C言語って関数の引数の評価順は定められていないのか……。
+
+リファクタリング、どういう状態になるのがいいのか考えた結果、
+一番上の関数は文法のパースだけを担当して、ノードの生成などは
+別の関数にやらせるかたちがよさそう？
+
+グローバル変数を実装するときに、
+アセンブリの`.zero`と`.comm`の違いで詰まった。
+Godboltは`.zero`を使っているが、なぜか自分の環境だと上手くいかない
+（Godboltの出力をコピペしても動かない）
+`objdump -h tmp`の出力を見ると若干メモリアロケーションに差があるので
+そのあたりに原因があると思われるが、具体的な原因はよくわかっていない。
+
+具体的なコードを残しておくと、
+```c
+x:
+  .zero 4
+main:
+  mov DWORD PTR x[rip], 3
+  mov eax, DWORD PTR x[rip]
+  ret
+```
+はセグフォするが、
+```
+.comm x 4
+main:
+  mov DWORD PTR x[rip], 3
+  mov eax, DWORD PTR x[rip]
+  ret
+```
+は正しく動く。
+
+多分原因がわかった。
+Oracleの[x86 Assembly Language Reference Manual](https://docs.oracle.com/cd/E26502_01/html/E28388/eoiyg.html)
+の`.zero`を見ると、"While filling a data section, the .zero directive fills the number of bytes specified by expression with zero (0)"とある。
+つまり、data sectionを見ているときに`.zero`を入れないとうまく動いてくれない。
+しかし、単純に上のassemblyを書くと、text sectionを作ってるときに
+`.zero`を踏むので、ダメ。
+`.data`を書いて指定するか、`.comm`でbss sectionに確保してもらうかしないといけない。

@@ -87,7 +87,7 @@ void print_node(Node *node) {
 }
 
 void print_function(Node *func) {
-  fprintf(stderr, "%.*s\n", func->fname_len, func->fname);
+  fprintf(stderr, "%.*s\n", func->len, func->name);
   fprintf(stderr, "######################################\n");
   Node *stmt = func->stmts;
   int stmt_cnt = 1;

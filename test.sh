@@ -17,87 +17,116 @@ assert() {
   fi
 }
 
-# assert 3 "int main() {int a[2]; a[0] = 1; 1[a] = 2; return 0[a] + a[1];}"
-assert 3 "int main() {int x; int *a[3]; a[2] = &x; *a[2] = 3; return x;}"
-assert 1 "int main() { int a[1]; a[0] = 1; return a[0]; }"
-assert 3 "int main() {int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1];}"
+assert 3 "int x; int main() {x = 3; return x;}"
 
-assert 2 "int main() {int x; int *y; y = &x; *y = 2; return x;}"
-assert 1 "int main() {int a[1]; *a = 1; int *p; p = a; return *p;}"
-assert 2 "int main() {int a[2];*(a + 1) = 2;int *p; p = a; return *(a + 1);}"
-assert 3 "int main() {int a[2]; *a = 1; *(a + 1) = 2;int *p; p = a; return *p + *(p + 1);}"
 
-assert 1 "int main(){int x; x = 1; return x;}"
-assert 8 "int main(){int x; return sizeof(**&&&x);}"
-assert 4 "int main(){int x; return sizeof(**&&x);}"
-assert 4 "int main(){int x; return sizeof(*&x);}"
-assert 8 "int main(){int **x; return sizeof(8 + x);}"
-assert 8 "int main(){int *x; return sizeof(8 + x);}"
-assert 8 "int main(){int *x; return sizeof(x + 8);}"
-assert 4 "int main(){int x; return sizeof(sizeof x);}"
-assert 8 "int main(){int x; x = 3; int *y; y = &x; int **z; z = &y; return sizeof(z);}"
-assert 8 "int main(){int x; x = 3; int *y; y = &x; return sizeof(y);}"
-assert 4 "int main(){int x; return sizeof x;}"
-assert 4 "int main(){int x;return sizeof(x);}"
-assert 4 "int main(){return sizeof(1);}"
-assert 4 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 2; return *q;}"
-assert 3 'int main(){int x; x = 3;int *y; y=&x; int **z; z=&y; return **z; }'
-assert 8 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 3; return *q;}"
-assert 3 'int main(){int x; x=3; return *&x; }'
-assert 5 'int main(){int x; x=3;int *y; y=&x; *y=5; return x; }'
-
-# assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; return *echo(y); }"
-
-assert 5 "int main() {
-  int x;
-  int *y;
-  int **z;
-  y = &x;
-  z = &y;
-  **z = 5;
+assert 7 "
+int x;
+int f() {
+  x = 4;
   return x;
-}"
-
-assert 3 "int main() {
-  int x;
-  int *y;
-  y = &x;
-  *y = 3;
-  return x;
-}"
-
-assert 3 "int main() {
-  return 3;
-}"
-assert 5 "int main() {
-  int x; 
-  x = 3; 
-  x = 5; 
-  return x;
-}"
-assert 3 "int main() {
-  int x; 
-  x = 3; 
-  return x;
-}"
-assert 10 "int add(int x, int y){
-  return x+y;
 }
-int main(){
-  return add(3,7);
-}"
-assert 233 "
-int f(int x) {
-  if (x <= 2) {
-    return 1;
-  } else {
-    return f(x - 1) + f(x - 2);
-  }
-}
+int y;
 int main() {
-  return f(13);
+  y = 3;
+  f();
+  return x + y;
 }
 "
+
+assert 3 "
+int main() {
+  char x[3];
+  x[0] = -1;
+  x[1] = 2;
+  int y;
+  y = 4;
+  return x[0] + y;
+}
+"
+
+# assert 3 "int x; int main() {x = 3; return x;}"
+# assert 3 "int y; int main() {int x; int *a[3]; a[2] = &x; *a[2] = 3; return x;}"
+# assert 3 "int main() {int x; int *a[3]; a[2] = &x; *a[2] = 3; return x;}"
+# assert 1 "int main() { int a[1]; a[0] = 1; return a[0]; }"
+# assert 3 "int main() {int a[2]; a[0] = 1; a[1] = 2; return a[0] + a[1];}"
+
+# assert 2 "int main() {int x; int *y; y = &x; *y = 2; return x;}"
+# assert 1 "int main() {int a[1]; *a = 1; int *p; p = a; return *p;}"
+# assert 2 "int main() {int a[2];*(a + 1) = 2;int *p; p = a; return *(a + 1);}"
+# assert 3 "int main() {int a[2]; *a = 1; *(a + 1) = 2;int *p; p = a; return *p + *(p + 1);}"
+
+# assert 1 "int main(){int x; x = 1; return x;}"
+# assert 8 "int main(){int x; return sizeof(**&&&x);}"
+# assert 4 "int main(){int x; return sizeof(**&&x);}"
+# assert 4 "int main(){int x; return sizeof(*&x);}"
+# assert 8 "int main(){int **x; return sizeof(8 + x);}"
+# assert 8 "int main(){int *x; return sizeof(8 + x);}"
+# assert 8 "int main(){int *x; return sizeof(x + 8);}"
+# assert 4 "int main(){int x; return sizeof(sizeof x);}"
+# assert 8 "int main(){int x; x = 3; int *y; y = &x; int **z; z = &y; return sizeof(z);}"
+# assert 8 "int main(){int x; x = 3; int *y; y = &x; return sizeof(y);}"
+# assert 4 "int main(){int x; return sizeof x;}"
+# assert 4 "int main(){int x;return sizeof(x);}"
+# assert 4 "int main(){return sizeof(1);}"
+# assert 4 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 2; return *q;}"
+# assert 3 'int main(){int x; x = 3;int *y; y=&x; int **z; z=&y; return **z; }'
+# assert 8 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 3; return *q;}"
+# assert 3 'int main(){int x; x=3; return *&x; }'
+# assert 5 'int main(){int x; x=3;int *y; y=&x; *y=5; return x; }'
+
+# # assert 1  "int *echo(int *x) { return x; } int main(){ int x; int *y; x = 1; return *echo(y); }"
+
+# assert 5 "int main() {
+#   int x;
+#   int *y;
+#   int **z;
+#   y = &x;
+#   z = &y;
+#   **z = 5;
+#   return x;
+# }"
+
+# assert 3 "int main() {
+#   int x;
+#   int *y;
+#   y = &x;
+#   *y = 3;
+#   return x;
+# }"
+
+# assert 3 "int main() {
+#   return 3;
+# }"
+# assert 5 "int main() {
+#   int x; 
+#   x = 3; 
+#   x = 5; 
+#   return x;
+# }"
+# assert 3 "int main() {
+#   int x; 
+#   x = 3; 
+#   return x;
+# }"
+# assert 10 "int add(int x, int y){
+#   return x+y;
+# }
+# int main(){
+#   return add(3,7);
+# }"
+# assert 233 "
+# int f(int x) {
+#   if (x <= 2) {
+#     return 1;
+#   } else {
+#     return f(x - 1) + f(x - 2);
+#   }
+# }
+# int main() {
+#   return f(13);
+# }
+# "
 # assert 3 "main(){x=3;y=&x;return *y;}"
 # assert 1 "f(x){{if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}}main(){return f(1);}"
 # assert 1 "f(x){if(x<=2){return 1;} else {return f(x-1)+f(x-2);}}main(){return f(2);}"

@@ -2,12 +2,22 @@
 
 // nodeに対応する変数のアドレスをスタックトップにpushする
 void gen_lval(Node *node) {
-  if (node->kind != ND_LVAR) {
+  if (node->kind != ND_LVAR && node->kind != ND_GVAR) {
     error("代入の左辺値が変数ではありません");
   }
-  printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->offset);
-  printf("  push rax\n");
+  switch (node->kind) {
+    case ND_LVAR:
+      printf("  mov rax, rbp\n");
+      printf("  sub rax, %d\n", node->offset);
+      printf("  push rax\n");
+      break;
+    case ND_GVAR:
+      printf("  lea rax, %.*s[rip]\n", node->len, node->name);
+      printf("  push rax\n");
+      break;
+    default:
+      error("代入の左辺値が変数ではありません");
+  }
 }
 
 void gen(Node *node);
@@ -65,6 +75,10 @@ char *node_kind_str(NodeKind kind) {
       return "ND_ADDR";
     case ND_DEREF:
       return "ND_DEREF";
+    case ND_GVAR_DEF:
+      return "ND_GVAR_DEF";
+    case ND_GVAR:
+      return "ND_GVAR";
   }
 }
 
@@ -86,8 +100,6 @@ void gen(Node *node) {
       print_gen_end(node);
       return;
     case ND_LVAR:
-      printf("# at the end of this, the current value of the lvar\n");
-      printf("# will be pushed on top of the stack\n");
       // nodeに対応する変数のアドレスをスタックトップにpushする
       gen_lval(node);
       // スタックトップにある値をpopし、それをアドレスとみなしたときの
@@ -201,13 +213,13 @@ void gen(Node *node) {
         }
         args = args->next;
       }
-      printf("  call %.*s\n", node->fname_len, node->fname);
+      printf("  call %.*s\n", node->len, node->name);
       printf("  push rax\n");
       print_gen_end(node);
       return;
     }
     case ND_FUNC: {
-      printf("%.*s:\n", node->fname_len, node->fname);
+      printf("%.*s:\n", node->len, node->name);
 
       // prologue
       printf("  push rbp\n");
@@ -256,6 +268,22 @@ void gen(Node *node) {
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
       printf("  push rax\n");
+      print_gen_end(node);
+      return;
+    case ND_GVAR_DEF:
+      printf("  .comm %.*s, %i\n", node->len, node->name, node->offset);
+      print_gen_end(node);
+      return;
+    case ND_GVAR:
+      // nodeに対応する変数のアドレスをスタックトップにpushする
+      gen_lval(node);
+      // スタックトップにある値をpopし、それをアドレスとみなしたときの
+      // アドレスの値をスタックにpushする
+      if (node->type->ty != ARRAY) {
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+      }
       print_gen_end(node);
       return;
     default:
@@ -323,13 +351,15 @@ void gen(Node *node) {
   print_gen_end(node);
 }
 
-void codegen(Node **functions) {
+void codegen(Node **definitions) {
   fprintf(stderr, "アセンブリ生成開始\n");
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
 
-  for (int i = 0; functions[i]; i++) {
-    gen(functions[i]);
-    printf("  pop rax\n");
+  for (int i = 0; definitions[i]; i++) {
+    gen(definitions[i]);
+    if (definitions[i]->kind == ND_FUNC) {
+      printf("  pop rax\n");
+    }
   }
 }
