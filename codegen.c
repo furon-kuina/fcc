@@ -1,7 +1,7 @@
 #include "fcc.h"
 
 // nodeに対応する変数のアドレスをスタックトップにpushする
-void gen_lval(Node *node) {
+void gen_lval(Node* node) {
   if (node->kind != ND_LVAR && node->kind != ND_GVAR) {
     error("代入の左辺値が変数ではありません");
   }
@@ -20,10 +20,10 @@ void gen_lval(Node *node) {
   }
 }
 
-void gen(Node *node);
+void gen(Node* node);
 
-void gen_stmts(Node *stmt) {
-  Node *cur = stmt;
+void gen_stmts(Node* stmt) {
+  Node* cur = stmt;
   while (cur) {
     gen(cur);
     printf("  pop rax\n");
@@ -33,7 +33,7 @@ void gen_stmts(Node *stmt) {
 
 int xxx = 0;
 
-char *node_kind_str(NodeKind kind) {
+char* node_kind_str(NodeKind kind) {
   switch (kind) {
     case ND_ADD:
       return "ND_ADD";
@@ -79,20 +79,22 @@ char *node_kind_str(NodeKind kind) {
       return "ND_GVAR_DEF";
     case ND_GVAR:
       return "ND_GVAR";
+    case ND_CHAR:
+      return "ND_CHAR";
   }
 }
 
-void print_gen_start(Node *node) {
+void print_gen_start(Node* node) {
   printf("# start generating node #%i of kind %s\n", node->id,
          node_kind_str(node->kind));
 }
 
-void print_gen_end(Node *node) {
+void print_gen_end(Node* node) {
   printf("# finish generating node #%i of kind %s\n", node->id,
          node_kind_str(node->kind));
 }
 
-void gen(Node *node) {
+void gen(Node* node) {
   print_gen_start(node);
   switch (node->kind) {
     case ND_NUM:
@@ -195,7 +197,7 @@ void gen(Node *node) {
       // よくわかってないのでrspを16の倍数に調整していない
       // 不都合が出るまでは放置
       // TODO: align to 16
-      Node *args = node->args;
+      Node* args = node->args;
       for (int i = 0; args != NULL && i < 6; ++i) {
         gen(args);
         if (i == 0) {
@@ -213,7 +215,20 @@ void gen(Node *node) {
         }
         args = args->next;
       }
+      int id = xxx;
+      xxx++;
+      printf("  mov rax, rsp\n");
+      printf("  and rax, 15\n");
+      printf("  jnz .Lcall%d\n", id);
+      printf("  mov rax, 0\n");
       printf("  call %.*s\n", node->len, node->name);
+      printf("  jmp .Lend%d\n", id);
+      printf(".Lcall%d:\n", id);
+      printf("  sub rsp, 8\n");
+      printf("  mov rax, 0\n");
+      printf("  call %.*s\n", node->len, node->name);
+      printf("  add rsp, 8\n");
+      printf(".Lend%d:\n", id);
       printf("  push rax\n");
       print_gen_end(node);
       return;
@@ -226,7 +241,7 @@ void gen(Node *node) {
       printf("  mov rbp, rsp\n");
       printf("  sub rsp, %i\n", node->sf_size);
 
-      Node *args = node->args;
+      Node* args = node->args;
 
       for (int i = 0; args != NULL && i < 6; i++) {
         gen_lval(args);
@@ -351,7 +366,7 @@ void gen(Node *node) {
   print_gen_end(node);
 }
 
-void codegen(Node **definitions) {
+void codegen(Node** definitions) {
   fprintf(stderr, "アセンブリ生成開始\n");
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");

@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14",
+                "/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux",
+                "/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward",
+                "/usr/lib/gcc/x86_64-redhat-linux/14/include",
+                "/usr/local/include",
+                "/usr/include"
+            ],
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
