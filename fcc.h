@@ -130,26 +130,26 @@ struct Func {
 typedef struct Node Node;
 
 struct Node {
-  NodeKind kind;  // ノードの種類
-  Node *lhs;      // 左オペランド
-  Node *rhs;      // 右オペランド
-  Node *init;     // kind == ND_FOR
-  Node *cond;     // kind == ND_IF, ND_FOR
-  Node *update;   // kind == ND_FOR
-  Node *stmts;    // kind == ND_BLOCK
-  Node *args;     // kind == ND_CALL, ND_FUNC
-  Node *next;     // kind == ND_FUNC
-  Type *type;     // kind == ND_FUNC, ND_LVAR. ND_GVAR
-  int val;        // kind == ND_NUM
-  int offset;     // kind == ND_LVAR, ND_GVAR
-  int sf_size;    // kind == ND_FUNC
-  char *name;     // 関数名 kind == ND_CALL, kind == ND_GVAR_DEF
-  int len;        // 関数名 kind == ND_CALL, kind == ND_GVAR_DEF
-  int id;         // デバッグ用
+  NodeKind kind;   // ノードの種類
+  Node *lhs;       // 左オペランド
+  Node *rhs;       // 右オペランド
+  Node *init;      // kind == ND_FOR
+  Node *cond;      // kind == ND_IF, ND_FOR
+  Node *update;    // kind == ND_FOR
+  Node *stmts;     // kind == ND_BLOCK
+  Node *args;      // kind == ND_CALL, ND_FUNC
+  Node *next;      // kind == ND_FUNC
+  Type *type;      // kind == ND_FUNC, ND_LVAR. ND_GVAR
+  int val;         // kind == ND_NUM
+  int offset;      // kind == ND_LVAR, ND_GVAR
+  int sf_size;     // kind == ND_FUNC
+  char *name;      // 関数名 kind == ND_CALL, kind == ND_GVAR_DEF
+  int len;         // 関数名 kind == ND_CALL, kind == ND_GVAR_DEF
+  int id;          // デバッグ用
+  char *dbg_name;  // デバッグ用
 };
 
 Node **parse(Token *tok);
-
+Node *add_type(Node *node);
 // codegen
-
-void codegen(Node **code);
+void codegen(Node **node);

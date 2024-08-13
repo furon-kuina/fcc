@@ -165,10 +165,12 @@ Node *equality();
 Node *relational();
 Node *add();
 Node *unary();
+Node *postfix();
 Type *type();
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
+  node->type = calloc(1, sizeof(Type));
   node->kind = kind;
   node->lhs = lhs;
   node->rhs = rhs;
@@ -198,9 +200,11 @@ Node *new_node_char(char val) {
   return node;
 }
 
-Node *new_node_lvar(Token *ident, Type *ty) {
+Node *new_node_lvar_def(Token *ident, Type *ty) {
   Node *node = calloc(1, sizeof(Node));
+  node->type = calloc(1, sizeof(Type));
   node->kind = ND_LVAR;
+
   LVar *lvar = calloc(1, sizeof(LVar));
   lvar->type = ty;
   lvar->next = locals;
@@ -212,10 +216,38 @@ Node *new_node_lvar(Token *ident, Type *ty) {
     lvar->offset = allocation_size(ty);
   }
   node->offset = lvar->offset;
+
   node->type = lvar->type;
   node->id = node_cnt++;
   locals = lvar;
   sf_size += allocation_size(ty);
+  return node;
+}
+
+Node *new_node_lvar(LVar *lvar) {
+  Node *node = calloc(1, sizeof(Node));
+  node->type = calloc(1, sizeof(Type));
+  node->kind = ND_LVAR;
+  node->id = node_cnt++;
+  node->offset = lvar->offset;
+  node->type = lvar->type;
+  node->name = lvar->name;
+  node->len = lvar->len;
+}
+
+Node *new_node_gvar(Token *ident) {
+  GVar *gvar = find_gvar(ident);
+  if (!gvar) {
+    error_at(ident->str, "undeclared identifier: %.*s", ident->len, ident->str);
+  }
+  Node *node = calloc(1, sizeof(Node));
+  node->type = calloc(1, sizeof(Type));
+  node->kind = ND_GVAR;
+  node->id = node_cnt++;
+  node->offset = gvar->offset;
+  node->type = gvar->type;
+  node->name = gvar->name;
+  node->len = gvar->len;
   return node;
 }
 
@@ -236,15 +268,14 @@ Node *new_node_gvar_def(Token *ident, Type *ty) {
   }
   node->offset = gvar->offset;
   node->type = gvar->type;
-  node->id = node_cnt++;
   globals = gvar;
+  node->id = node_cnt++;
   return node;
 }
 
 Node *new_node_func(Token *ident, Type *ty, Node *args, Node *stmts) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_FUNC;
-  node->id = node_cnt++;
   node->name = ident->str;
   node->len = ident->len;
   node->type = ty;
@@ -253,6 +284,21 @@ Node *new_node_func(Token *ident, Type *ty, Node *args, Node *stmts) {
   node->sf_size = sf_size;
   sf_size = 0;
   locals = NULL;
+  node->id = node_cnt++;
+  return node;
+}
+
+Node *new_node_call(Token *ident, Node *args) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_CALL;
+  node->args = args;
+  node->type = calloc(1, sizeof(Type));
+  // assuming that the function return type is int
+  // TODO: attach the appropriate type
+  node->type->ty = INT;
+  node->name = ident->str;
+  node->len = ident->len;
+  node->id = node_cnt++;
   return node;
 }
 
@@ -265,7 +311,7 @@ void register_func(Token *ident, Type *type) {
   funcs = func;
 }
 
-// reads "(" type ident ("," type ident)* ")" | "(" ")"
+// func-arg-list =  "(" type ident ("," type ident)* ")" | "(" ")"
 Node *func_arg_list() {
   expect("(");
   Node args_head;
@@ -273,7 +319,7 @@ Node *func_arg_list() {
   Node *cur = &args_head;
   while (!consume_str(")")) {
     Type *ty = type();
-    Node *new = new_node_lvar(token, ty);
+    Node *new = new_node_lvar_def(token, ty);
     new->type = ty;
     advance();
     cur->next = new;
@@ -284,6 +330,7 @@ Node *func_arg_list() {
   return args_head.next;
 }
 
+// program = (global-var | function)*
 void program() {
   int i = 0;
   while (!at_eof()) {
@@ -347,10 +394,11 @@ Node *stmt() {
     }
     node = calloc(1, sizeof(Node));
     node->kind = ND_BLOCK;
+    node->id = node_cnt++;
     node->stmts = head.next;
   } else if (consume_token(TK_RETURN)) {
     node = calloc(1, sizeof(Node));
-    node_cnt++;
+    node->id = node_cnt++;
     node->kind = ND_RETURN;
     node->lhs = expr();
     expect(";");
@@ -394,7 +442,7 @@ Node *stmt() {
     node->lhs = stmt();
 
   } else if (token->kind == TK_INT || token->kind == TK_CHAR) {
-    // 変数定義
+    // local variable definition
     Type *ty = type();
     if (token->kind != TK_IDENT) {
       error_at(token->str, "Expected identifier\n");
@@ -405,11 +453,11 @@ Node *stmt() {
       if (token->kind != TK_NUM) {
         expect_number();
       }
-      node = new_node_lvar(identifier, array_of(ty, token->val));
+      node = new_node_lvar_def(identifier, array_of(ty, token->val));
       advance();
       expect("]");
     } else {
-      node = new_node_lvar(identifier, ty);
+      node = new_node_lvar_def(identifier, ty);
     }
     expect(";");
   } else {
@@ -421,54 +469,58 @@ Node *stmt() {
 
 Node *expr() { return assign(); }
 
+// assign = equality ("=" assign)?
 Node *assign() {
   Node *node = equality();
   if (consume_str("=")) {
-    node = new_node(ND_ASSIGN, node, assign());
+    node = new_node_binary(ND_ASSIGN, node, assign());
   }
   return node;
 }
 
+// equality = relational ("==" relational | "!=" relational)*
 Node *equality() {
   Node *node = relational();
   for (;;) {
     if (consume_str("==")) {
-      node = new_node(ND_EQ, node, relational());
+      node = new_node_binary(ND_EQ, node, relational());
     } else if (consume_str("!=")) {
-      node = new_node(ND_NEQ, node, relational());
+      node = new_node_binary(ND_NEQ, node, relational());
     } else {
       return node;
     }
   }
 }
 
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 Node *relational() {
   Node *node = add();
   for (;;) {
     if (consume_str("<")) {
-      node = new_node(ND_LT, node, add());
+      node = new_node_binary(ND_LT, node, add());
     } else if (consume_str(">")) {
-      node = new_node(ND_LT, add(), node);
+      node = new_node_binary(ND_LT, add(), node);
     } else if (consume_str("<=")) {
-      node = new_node(ND_LE, node, add());
+      node = new_node_binary(ND_LE, node, add());
     } else if (consume_str(">=")) {
-      node = new_node(ND_LE, add(), node);
+      node = new_node_binary(ND_LE, add(), node);
     } else {
       return node;
     }
   }
 }
 
+// add = mul ("+" mul | "-" mul)*
 Node *add() {
   Node *node = mul();
   bool is_add_or_sub = false;
   for (;;) {
     if (consume_str("+")) {
       is_add_or_sub = true;
-      node = new_node(ND_ADD, node, mul());
+      node = new_node_binary(ND_ADD, node, mul());
     } else if (consume_str("-")) {
       is_add_or_sub = true;
-      node = new_node(ND_SUB, node, mul());
+      node = new_node_binary(ND_SUB, node, mul());
     } else if (is_add_or_sub) {
       node->type = calloc(1, sizeof(Type));
       if (node->lhs->type->ty == PTR || node->lhs->type->ty == ARRAY) {
@@ -487,35 +539,38 @@ Node *add() {
   }
 }
 
+// mul = unary ("*" unary | "/" unary)*
 Node *mul() {
   Node *node = unary();
   for (;;) {
     if (consume_str("*")) {
-      node = new_node(ND_MUL, node, unary());
+      node = new_node_binary(ND_MUL, node, unary());
     } else if (consume_str("/")) {
-      node = new_node(ND_DIV, node, unary());
+      node = new_node_binary(ND_DIV, node, unary());
     } else {
       return node;
     }
   }
 }
 
+// unary = ("+" | "-" | "*" | "&")? unary
+//       | postfix
 Node *unary() {
   if (consume_str("+")) {
     return primary();
   }
   if (consume_str("-")) {
-    return new_node(ND_SUB, new_node_num(0), primary());
+    return new_node_binary(ND_SUB, new_node_num(0), primary());
   }
   if (consume_str("&")) {
     Node *operand = unary();
-    Node *node = new_node(ND_ADDR, operand, NULL);
+    Node *node = new_node_binary(ND_ADDR, operand, NULL);
     node->type = pointer_to(operand->type);
     return node;
   }
   if (consume_str("*")) {
     Node *operand = unary();
-    Node *node = new_node(ND_DEREF, operand, NULL);
+    Node *node = new_node_binary(ND_DEREF, operand, NULL);
     node->type = base_type_of(operand->type);
     return node;
   }
@@ -523,9 +578,40 @@ Node *unary() {
     Node *node = unary();
     return new_node_num(size_of(node->type));
   }
-  return primary();
+  return postfix();
 }
 
+// postfix = primary ( "[" expr "]")*
+// postfix: 後置演算子
+Node *postfix() {
+  Node *node = primary();
+  // x[y] is equivalent to *(x + y)
+  while (consume_str("[")) {
+    Type *ty = base_type_of(node->type);
+    node =
+        new_node_binary(ND_DEREF, new_node_binary(ND_ADD, node, expr()), NULL);
+    node->type = ty;
+    expect("]");
+  }
+  return node;
+}
+
+// func-args = "(" (assign ("," assign)*)? ")"
+Node *func_args() {
+  if (consume_str(")")) {
+    return NULL;
+  }
+  Node *head = assign();
+  Node *cur = head;
+  while (consume_str(",")) {
+    cur->next = assign();
+    cur = cur->next;
+  }
+  expect(")");
+  return head;
+}
+
+// primary = "(" expr ")" | ident func-args? | num
 Node *primary() {
   if (consume_str("(")) {
     Node *node = expr();
@@ -533,69 +619,23 @@ Node *primary() {
     return node;
   }
   if (token->kind == TK_IDENT) {
-    Node *node = calloc(1, sizeof(Node));
     Token *ident = token;
     advance();
-
-    if (consume_str("[")) {
-      // TODO: support array element access in
-      // a format like 3[a]
-      Node *num_node = new_node_num(expect_number());
-      Node *ptr_node = calloc(1, sizeof(Node));
-      ptr_node->kind = ND_LVAR;
-      LVar *lvar = find_lvar(ident);
-      ptr_node->id = node_cnt++;
-      ptr_node->offset = lvar->offset;
-      ptr_node->type = lvar->type;
-      Node *add_node = new_node(ND_ADD, ptr_node, num_node);
-      add_node->type = ptr_node->type;
-      node = new_node(ND_DEREF, add_node, NULL);
-      node->type = base_type_of(ptr_node->type);
-      expect("]");
-      return node;
-    }
-
     if (consume_str("(")) {
-      // 関数名だった場合
-      Node head;
-      head.next = NULL;
-      Node *cur = &head;
-      while (!consume_str(")")) {
-        Node *new = expr();
-        new->next = NULL;
-        cur->next = new;
-        cur = cur->next;
-        consume_str(",");
-      }
-      node->args = head.next;
-      node->kind = ND_CALL;
-      node->type = calloc(1, sizeof(Type));
-      // assuming that the function return type is int
-      // TODO: attach the appropriate type
-      node->type->ptr_to = NULL;
-      node->type->ty = INT;
-      node->name = ident->str;
-      node->len = ident->len;
-      return node;
+      // the identifier is a function name
+      return new_node_call(ident, func_args());
     }
-    // 変数名だった場合
+    Node *node = calloc(1, sizeof(Node));
+    // the identifier is a variable name
     token = ident;
     LVar *lvar = find_lvar(token);
     if (lvar) {
-      node->kind = ND_LVAR;
-      node->id = node_cnt++;
-      node->offset = lvar->offset;
-      node->type = lvar->type;
+      // defined local vairable
+      node = new_node_lvar(lvar);
     } else {
-      GVar *gvar = find_gvar(token);
-      node->kind = ND_GVAR;
-      node->id = node_cnt++;
-      node->offset = gvar->offset;
-      node->type = gvar->type;
-      node->name = gvar->name;
-      node->len = gvar->len;
+      // defined global variable
+      node = new_node_gvar(ident);
     }
-
     advance();
     return node;
   }

@@ -45,9 +45,6 @@ int ident_len(char *p) {
 }
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
-  fprintf(stderr, "\nトークン%d\n", token_cnt++);
-  fprintf(stderr, "トークンの種類: %d\n", kind);
-
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;

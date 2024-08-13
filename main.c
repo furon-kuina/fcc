@@ -23,7 +23,7 @@ void print_token_list(Token *token) {
   fprintf(stderr, "]\n");
 }
 
-char *node_dbg(Node *node) {
+char *print_nodekind(Node *node) {
   switch (node->kind) {
     case ND_ADD:
       return "+";
@@ -42,9 +42,9 @@ char *node_dbg(Node *node) {
     case ND_NEQ:
       return "!=";
     case ND_NUM:
-      return "Number";
+      return "int literal";
     case ND_LVAR:
-      return "LVAR";
+      return "local variable";
     case ND_ASSIGN:
       return "assign";
     case ND_RETURN:
@@ -65,46 +65,142 @@ char *node_dbg(Node *node) {
       return "address";
     case ND_DEREF:
       return "dereference";
+    case ND_CHAR:
+      return "char";
+    case ND_GVAR:
+      return "global variable";
+    case ND_GVAR_DEF:
+      return "global variable definition";
   }
 }
 
-void print_node(Node *node) {
-  fprintf(stderr, "\n");
-  fprintf(stderr, "ノード番号: %i\n", node->id);
-  fprintf(stderr, "ノード種類: %s\n", node_dbg(node));
-  if (node->lhs) {
-    fprintf(stderr, "左の子: %i\n", node->lhs->id);
+void print_indent(char *str, int indent) {
+  for (int i = 0; i < indent; i++) {
+    fprintf(stderr, " ");
   }
-  if (node->rhs) {
-    fprintf(stderr, "右の子: %i\n", node->rhs->id);
-  }
-  if (node->lhs) {
-    print_node(node->lhs);
-  }
-  if (node->rhs) {
-    print_node(node->rhs);
-  }
+  fprintf(stderr, "%s", str);
 }
 
-void print_function(Node *func) {
-  fprintf(stderr, "%.*s\n", func->len, func->name);
-  fprintf(stderr, "######################################\n");
-  Node *stmt = func->stmts;
-  int stmt_cnt = 1;
-  while (stmt) {
-    fprintf(stderr, "-------------------------------------");
-    fprintf(stderr, "\n%i番目のstatement", stmt_cnt++);
-    print_node(stmt);
-    stmt = stmt->next;
+void print_node(Node *node, int indent) {
+  for (int i = 0; i < indent; i++) {
+    fprintf(stderr, " ");
   }
-}
+  fprintf(stderr, "node #%i, type: \"%s\", ", node->id, print_nodekind(node));
+  switch (node->kind) {
+    case ND_ADD:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_SUB:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_MUL:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_DIV:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_LT:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_LE:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_EQ:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_NEQ:
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_NUM:
+      fprintf(stderr, "value: %d\n", node->val);
+      break;
+    case ND_LVAR:
+      fprintf(stderr, "name: %.*s\n", node->len, node->name);
+      break;
+    case ND_ASSIGN:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_RETURN:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      break;
+    case ND_WHILE:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      print_node(node->rhs, indent + 2);
+      break;
+    case ND_IF:
+      fprintf(stderr, "\n");
 
-void print_ast(Node **functions) {
-  int i = 0;
-  while (functions[i]) {
-    fprintf(stderr, "\n%i番目の関数: ", i + 1);
-    print_function(functions[i++]);
-    fprintf(stderr, "######################################\n\n");
+      print_node(node->cond, indent + 2);
+      print_node(node->lhs, indent + 2);
+      if (node->rhs) {
+        // else
+        print_node(node->rhs, indent + 2);
+      }
+      break;
+    case ND_FOR:
+      fprintf(stderr, "\n");
+      print_indent("initialization:\n", indent + 2);
+      if (node->init) {
+        print_node(node->init, indent + 2);
+      }
+      print_indent("condition:\n", indent + 2);
+      if (node->cond) {
+        print_node(node->cond, indent + 2);
+      }
+      print_indent("update:\n", indent + 2);
+      if (node->update) {
+        print_node(node->update, indent + 2);
+      }
+      print_node(node->lhs, indent + 2);
+      break;
+    case ND_BLOCK:
+      fprintf(stderr, "\n");
+      print_node(node->stmts, indent + 2);
+      break;
+    case ND_CALL:
+      fprintf(stderr, "name: %.*s\n", node->len, node->name);
+      print_indent("arguments:\n", indent + 2);
+      print_node(node->args, indent + 2);
+      break;
+    case ND_FUNC:
+      fprintf(stderr, "name: %.*s\n", node->len, node->name);
+      print_node(node->stmts, indent + 2);
+      break;
+    case ND_ADDR:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      break;
+    case ND_DEREF:
+      fprintf(stderr, "\n");
+      print_node(node->lhs, indent + 2);
+      break;
+    case ND_CHAR:
+      break;
+    case ND_GVAR:
+      fprintf(stderr, "name: %.*s\n", node->len, node->name);
+      break;
+    case ND_GVAR_DEF:
+      fprintf(stderr, "name: %.*s\n", node->len, node->name);
+      break;
   }
 }
 
@@ -119,9 +215,12 @@ int main(int argc, char **argv) {
 
   Token *token = tokenize(user_input);
   print_token_list(token);
-  Node **functions = parse(token);
-  print_ast(functions);
-  codegen(functions);
+  Node **ast = parse(token);
+  for (int i = 0; ast[i]; i++) {
+    print_node(ast[i], 0);
+    // ast[i] = add_type(ast[i]);
+  }
+  codegen(ast);
 
   return 0;
 }

@@ -194,9 +194,6 @@ void gen(Node* node) {
       return;
     }
     case ND_CALL: {
-      // よくわかってないのでrspを16の倍数に調整していない
-      // 不都合が出るまでは放置
-      // TODO: align to 16
       Node* args = node->args;
       for (int i = 0; args != NULL && i < 6; ++i) {
         gen(args);
