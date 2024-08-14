@@ -85,7 +85,7 @@ void print_node(Node *node, int indent) {
   for (int i = 0; i < indent; i++) {
     fprintf(stderr, " ");
   }
-  fprintf(stderr, "node #%i, type: \"%s\", ", node->id, print_nodekind(node));
+  fprintf(stderr, "node #%i, kind: \"%s\", ", node->id, print_nodekind(node));
   switch (node->kind) {
     case ND_ADD:
       fprintf(stderr, "\n");
@@ -215,12 +215,12 @@ int main(int argc, char **argv) {
 
   Token *token = tokenize(user_input);
   print_token_list(token);
-  Node **ast = parse(token);
-  for (int i = 0; ast[i]; i++) {
-    print_node(ast[i], 0);
-    // ast[i] = add_type(ast[i]);
+  Program *program = parse(token);
+  for (int i = 0; program->definitions[i]; i++) {
+    print_node(program->definitions[i], 0);
   }
-  codegen(ast);
+  program = add_type(program);
+  codegen(program->definitions);
 
   return 0;
 }

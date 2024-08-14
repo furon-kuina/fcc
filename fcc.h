@@ -149,7 +149,14 @@ struct Node {
   char *dbg_name;  // デバッグ用
 };
 
-Node **parse(Token *tok);
-Node *add_type(Node *node);
-// codegen
+typedef struct Program Program;
+struct Program {
+  Func *functions;
+  GVar *globals;
+  LVar *locals;
+  Node **definitions;
+};
+
+Program *parse(Token *tok);
+Program *add_type(Program *program);
 void codegen(Node **node);

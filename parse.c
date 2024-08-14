@@ -133,27 +133,6 @@ size_t size_of(Type *type) {
   }
 }
 
-// Type *add_type(Node *node) {
-//   switch (node->kind) {
-//     case ND_ADD:
-//     case ND_SUB:
-//     case ND_MUL:
-//     case ND_DIV:
-//     case ND_LT:
-//     case ND_LE:
-//     case ND_EQ:
-//     case ND_NEQ:
-//     case ND_NUM:
-//     return case ND_ASSIGN:
-//       return node->rhs->type;
-//     case ND_LVAR:
-//     case ND_ADDR:
-//       return pointer_to(node->type);
-//     case ND_DEREF:
-//       return base_type_of(node->type);
-//   }
-// }
-
 Node *func_def();
 Node *gvar_def();
 Node *stmt();
@@ -233,6 +212,7 @@ Node *new_node_lvar(LVar *lvar) {
   node->type = lvar->type;
   node->name = lvar->name;
   node->len = lvar->len;
+  return node;
 }
 
 Node *new_node_gvar(Token *ident) {
@@ -665,9 +645,14 @@ Type *type() {
   return head;
 }
 
-Node **parse(Token *tok) {
+Program *parse(Token *tok) {
   fprintf(stderr, "パース開始\n");
   token = tok;
   program();
-  return definitions;
+  Program *program = calloc(1, sizeof(Program));
+  program->functions = funcs;
+  program->globals = globals;
+  program->locals = locals;
+  program->definitions = definitions;
+  return program;
 }
