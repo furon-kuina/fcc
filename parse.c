@@ -98,19 +98,7 @@ size_t allocation_size(Type *ty) {
   }
 }
 
-Type *pointer_to(Type *type) {
-  Type *res = calloc(1, sizeof(Type));
-  res->ptr_to = type;
-  res->ty = PTR;
-  return res;
-}
-
-Type *base_type_of(Type *type) {
-  if (type->ptr_to == NULL) {
-    error_at(token->str, "Expected pointer type");
-  }
-  return type->ptr_to;
-}
+// type-related functions
 
 Type *array_of(Type *ty, size_t size) {
   Type *res = calloc(1, sizeof(Type));
@@ -118,19 +106,6 @@ Type *array_of(Type *ty, size_t size) {
   res->ptr_to = ty;
   res->array_size = size;
   return res;
-}
-
-size_t size_of(Type *type) {
-  switch (type->ty) {
-    case CHAR:
-      return 1;
-    case INT:
-      return 4;
-    case PTR:
-      return 8;
-    case ARRAY:
-      return size_of(type->ptr_to) * type->array_size;
-  }
 }
 
 Node *func_def();
@@ -149,7 +124,6 @@ Type *type();
 
 Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
-  node->type = calloc(1, sizeof(Type));
   node->kind = kind;
   node->lhs = lhs;
   node->rhs = rhs;
@@ -161,9 +135,6 @@ Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
   node->val = val;
-  node->type = calloc(1, sizeof(Type));
-  node->type->ty = INT;
-  node->type->ptr_to = NULL;
   node->id = node_cnt++;
   return node;
 }
@@ -172,9 +143,6 @@ Node *new_node_char(char val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_CHAR;
   node->val = val;
-  node->type = calloc(1, sizeof(Type));
-  node->type->ty = CHAR;
-  node->type->ptr_to = NULL;
   node->id = node_cnt++;
   return node;
 }
@@ -209,7 +177,6 @@ Node *new_node_lvar(LVar *lvar) {
   node->kind = ND_LVAR;
   node->id = node_cnt++;
   node->offset = lvar->offset;
-  node->type = lvar->type;
   node->name = lvar->name;
   node->len = lvar->len;
   return node;
@@ -225,7 +192,6 @@ Node *new_node_gvar(Token *ident) {
   node->kind = ND_GVAR;
   node->id = node_cnt++;
   node->offset = gvar->offset;
-  node->type = gvar->type;
   node->name = gvar->name;
   node->len = gvar->len;
   return node;
@@ -272,10 +238,6 @@ Node *new_node_call(Token *ident, Node *args) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_CALL;
   node->args = args;
-  node->type = calloc(1, sizeof(Type));
-  // assuming that the function return type is int
-  // TODO: attach the appropriate type
-  node->type->ty = INT;
   node->name = ident->str;
   node->len = ident->len;
   node->id = node_cnt++;
@@ -493,30 +455,16 @@ Node *relational() {
 // add = mul ("+" mul | "-" mul)*
 Node *add() {
   Node *node = mul();
-  bool is_add_or_sub = false;
   for (;;) {
     if (consume_str("+")) {
-      is_add_or_sub = true;
       node = new_node_binary(ND_ADD, node, mul());
     } else if (consume_str("-")) {
-      is_add_or_sub = true;
       node = new_node_binary(ND_SUB, node, mul());
-    } else if (is_add_or_sub) {
-      node->type = calloc(1, sizeof(Type));
-      if (node->lhs->type->ty == PTR || node->lhs->type->ty == ARRAY) {
-        node->type->ty = PTR;
-        node->type->ptr_to = node->lhs->type->ptr_to;
-      } else if (node->rhs->type->ty == PTR || node->rhs->type->ty == ARRAY) {
-        node->type->ty = PTR;
-        node->type->ptr_to = node->rhs->type->ptr_to;
-      } else {
-        node->type->ty = node->lhs->type->ty;
-      }
-      return node;
     } else {
-      return node;
+      break;
     }
   }
+  return node;
 }
 
 // mul = unary ("*" unary | "/" unary)*
@@ -528,15 +476,17 @@ Node *mul() {
     } else if (consume_str("/")) {
       node = new_node_binary(ND_DIV, node, unary());
     } else {
-      return node;
+      break;
     }
   }
+  return node;
 }
 
 // unary = ("+" | "-" | "*" | "&")? unary
 //       | postfix
 Node *unary() {
   if (consume_str("+")) {
+    // TODO: fix to unary()
     return primary();
   }
   if (consume_str("-")) {
@@ -545,18 +495,16 @@ Node *unary() {
   if (consume_str("&")) {
     Node *operand = unary();
     Node *node = new_node_binary(ND_ADDR, operand, NULL);
-    node->type = pointer_to(operand->type);
     return node;
   }
   if (consume_str("*")) {
     Node *operand = unary();
     Node *node = new_node_binary(ND_DEREF, operand, NULL);
-    node->type = base_type_of(operand->type);
     return node;
   }
   if (consume_token(TK_SIZEOF)) {
-    Node *node = unary();
-    return new_node_num(size_of(node->type));
+    Node *operand = unary();
+    return new_node_binary(ND_SIZEOF, operand, NULL);
   }
   return postfix();
 }
@@ -567,10 +515,8 @@ Node *postfix() {
   Node *node = primary();
   // x[y] is equivalent to *(x + y)
   while (consume_str("[")) {
-    Type *ty = base_type_of(node->type);
     node =
         new_node_binary(ND_DEREF, new_node_binary(ND_ADD, node, expr()), NULL);
-    node->type = ty;
     expect("]");
   }
   return node;
@@ -605,15 +551,16 @@ Node *primary() {
       // the identifier is a function name
       return new_node_call(ident, func_args());
     }
-    Node *node = calloc(1, sizeof(Node));
+    Node *node;
     // the identifier is a variable name
     token = ident;
     LVar *lvar = find_lvar(token);
     if (lvar) {
-      // defined local vairable
+      // local vairable
       node = new_node_lvar(lvar);
     } else {
-      // defined global variable
+      // no local variable named ident
+      // thus global variable
       node = new_node_gvar(ident);
     }
     advance();

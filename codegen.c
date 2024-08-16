@@ -1,6 +1,6 @@
 #include "fcc.h"
 
-// nodeに対応する変数のアドレスをスタックトップにpushする
+// push the local variable's address to the stack
 void gen_lval(Node* node) {
   if (node->kind != ND_LVAR && node->kind != ND_GVAR) {
     error("代入の左辺値が変数ではありません");
@@ -106,6 +106,8 @@ void gen(Node* node) {
       gen_lval(node);
       // スタックトップにある値をpopし、それをアドレスとみなしたときの
       // アドレスの値をスタックにpushする
+
+      // this code is executed
       if (node->type->ty != ARRAY) {
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
@@ -114,11 +116,13 @@ void gen(Node* node) {
       print_gen_end(node);
       return;
     case ND_ASSIGN:
+      printf("# push lhs address\n");
       if (node->lhs->kind == ND_DEREF) {
         gen(node->lhs->lhs);
       } else {
         gen_lval(node->lhs);
       }
+      printf("# push rhs value\n");
       gen(node->rhs);
       // ここまでで、右辺の値, 左辺の変数のアドレスがスタックトップにある
       printf("  pop rdi\n");
@@ -276,7 +280,10 @@ void gen(Node* node) {
       print_gen_end(node);
       return;
     case ND_DEREF:
+      // generate operand as an address and push it
+      printf("  # generating ND_DEREF\n");
       gen(node->lhs);
+      // push the value the operand is referring to
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
       printf("  push rax\n");

@@ -16,6 +16,17 @@ assert() {
     exit 1
   fi
 }
+assert 2 "int main() {int a[2];*(a + 1) = 2;return *(a + 1);}"
+assert 8 "int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q;q = p + 3; return *q;}"
+
+
+assert 1 "
+int main() {
+  int x[1];
+  x[0] = 1;
+  return 1;
+}
+"
 
 assert 3 "int x; int main() {x = 3; return x;}"
 
@@ -33,6 +44,8 @@ int main() {
   return x + y;
 }
 "
+
+
 
 assert 3 "
 int main() {

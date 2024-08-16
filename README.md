@@ -209,3 +209,7 @@ Oracleの[x86 Assembly Language Reference Manual](https://docs.oracle.com/cd/E26
 しかし、単純に上のassemblyを書くと、text sectionを作ってるときに
 `.zero`を踏むので、ダメ。
 `.data`を書いて指定するか、`.comm`でbss sectionに確保してもらうかしないといけない。
+
+2024/08/14
+ここ数日また再開してる。
+ノードへの型付けをどのタイミングで行うか問題。ASTを構築し終わった後に型付けをしようとしたが、そうすると`sizeof`の処理が面倒になる。`sizeof`だけ特別扱いするのは嫌（`sizeof(type)`のために型を表すノードを用意する必要が生じる）ので、普通にAST構築と同時にやることにする。

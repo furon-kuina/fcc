@@ -92,6 +92,7 @@ typedef enum {
   ND_DEREF,     // dereference
   ND_GVAR_DEF,  // global variable definition
   ND_GVAR,      // global variable
+  ND_SIZEOF,    // sizeof
 } NodeKind;
 
 typedef struct Type Type;
@@ -130,13 +131,15 @@ struct Func {
 typedef struct Node Node;
 
 struct Node {
-  NodeKind kind;   // ノードの種類
-  Node *lhs;       // 左オペランド
-  Node *rhs;       // 右オペランド
-  Node *init;      // kind == ND_FOR
-  Node *cond;      // kind == ND_IF, ND_FOR
-  Node *update;    // kind == ND_FOR
-  Node *stmts;     // kind == ND_BLOCK
+  NodeKind kind;  // ノードの種類
+  Node *lhs;      // 左オペランド
+  Node *rhs;      // 右オペランド
+  Node *init;     // kind == ND_FOR
+  Node *cond;     // kind == ND_IF, ND_FOR
+  Node *update;   // kind == ND_FOR
+  Node *stmts;    // kind == ND_BLOCK
+  // a linked list representing function arguments
+  // used in both definition and call
   Node *args;      // kind == ND_CALL, ND_FUNC
   Node *next;      // kind == ND_FUNC
   Type *type;      // kind == ND_FUNC, ND_LVAR. ND_GVAR
@@ -158,5 +161,11 @@ struct Program {
 };
 
 Program *parse(Token *tok);
-Program *add_type(Program *program);
+Program *annotate_type(Program *program);
 void codegen(Node **node);
+
+bool number_type(Type *type);
+bool pointer_type(Type *type);
+Type *pointer_to(Type *type);
+Type *base_type_of(Type *type);
+char *type_str(Type *type);

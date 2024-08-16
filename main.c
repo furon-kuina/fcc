@@ -123,6 +123,7 @@ void print_node(Node *node, int indent) {
       print_node(node->rhs, indent + 2);
       break;
     case ND_NEQ:
+      fprintf(stderr, "\n");
       print_node(node->lhs, indent + 2);
       print_node(node->rhs, indent + 2);
       break;
@@ -174,12 +175,16 @@ void print_node(Node *node, int indent) {
       break;
     case ND_BLOCK:
       fprintf(stderr, "\n");
-      print_node(node->stmts, indent + 2);
+      for (Node *stmt = node->stmts; stmt; stmt = stmt->next) {
+        print_node(stmt, indent + 2);
+      }
       break;
     case ND_CALL:
       fprintf(stderr, "name: %.*s\n", node->len, node->name);
       print_indent("arguments:\n", indent + 2);
-      print_node(node->args, indent + 2);
+      if (node->args) {
+        print_node(node->args, indent + 2);
+      }
       break;
     case ND_FUNC:
       fprintf(stderr, "name: %.*s\n", node->len, node->name);
@@ -219,7 +224,7 @@ int main(int argc, char **argv) {
   for (int i = 0; program->definitions[i]; i++) {
     print_node(program->definitions[i], 0);
   }
-  program = add_type(program);
+  program = annotate_type(program);
   codegen(program->definitions);
 
   return 0;
